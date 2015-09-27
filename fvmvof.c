@@ -1,11 +1,19 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
+#include<string.h>
+#include<stdbool.h>
 #include "fvmvof.h"
+
 /* Finite Volume Method */
 /* Code to solve NS. First step, solve poisson equation in 2D */
 /* Define variables */
 
+void Compute_AX(void);
+int solve_BiCGSTAB(void);
+void write_vtk(void);
+void set_ghosts(void);
+void set_bc(void);
 
 int main(int argc, char *argv[])
 {
@@ -14,9 +22,7 @@ int main(int argc, char *argv[])
  * allocate arrays for pos, vel 
  * allocate RHS of poisson
  * set BCs
- *
  * write function for compute_Ax
- *
  * call bicgstab - which calls compute_Ax
  * we get p 
  *write p and the grid to file */
@@ -30,209 +36,215 @@ int main(int argc, char *argv[])
   u_x = malloc(N_cells*sizeof(double));
   u_y = malloc(N_cells*sizeof(double));
   u_z = malloc(N_cells*sizeof(double));
-/*r_x = malloc(N_cells*sizeof(double));
-  r_y = malloc(N_cells*sizeof(double));
-  r_z = malloc(N_cells*sizeof(double));*/
   p = malloc(N_cells*sizeof(double));
   rho = malloc(N_cells*sizeof(double));
   omega_z = malloc(N_cells*sizeof(double));
   omega_x = malloc(N_cells*sizeof(double));
   omega_y = malloc(N_cells*sizeof(double));
-
+  bc = malloc(N_cells *sizeof(BCs));
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
-  // only for poisson ;
-  
+  // only for poisson ;  
   b = malloc(N_cells*sizeof(double));
-  
-  int i;
-
+  set_ghosts();
+  //initial and boundary conditions
+  int i,l,m;
   for(i=0;i<N_cells;i++){
     b[i] = 0.0;
     p[i] = 0.0;
+    l = i%N_cells_x;
+    m = (int) i/N_cells_x;
   }
+  set_bc();
   //Boundary conditions are: xmin: 50 ymin: 0 xmax: 50 ymax: 100 
   double p_bc_W = 50.0, p_bc_E=50.0, p_bc_S=0.0, p_bc_N=100.0;
-  // generate rhs
-/*  for(i=0;i<N_cells;i++){
-    p = i % N_cells_x;
-    q = (int) i/N_cells_x;
-  if(p==0)
-    b[i] =    ;
-  if(q==0)
-    b[i] += - p[i]* a_s  ;
-  if(p==0)
-    b[i] += - p[i]* a_w  ;
-  if(p==0)
-    b[i] += - p[i]* a_w  ;
-  }*/
 
-  int test  = solve();
+  int test  = solve_BiCGSTAB();
 
-
-  
+  write_vtk();
   return 0;
 }
-int solve() {
-	int i, j ;
-	double rhoj_Minus, alphaj, omegaj, rhoj, betaj, H1, H2 ;
-        double norm, BICGEPS = 1.0E-12; 
-  	int BICG_ITER ;
-	bool STOP = false ;
 
-	// Start BICGSTAB iterations
-	// set initial solution vector x_0 = (Uj, Vj) 
-	ComputeAX() ;
-	// Initial vector r_0 = b - Ax_0, and r0* = r_0
-        for(i = 0 ; i < Nx ; i++) {
-                for(j = 0 ; j < Ny ; j++) {
-			Uj[i][j] = u[i][j] ;
-			rj[i][j] = f[i][j] - Temp[i][j] ; 
-        	        r0_star[i][j] = rj[i][j] ;
-
-		//	if( (i == ip) && (j == jp) ) { Uj[i][j] = 0.0 ; rj[i][j] = 0.0 ; r0_star[i][j] = 0.0 ; }
-		}
-	}
-
-	BICG_ITER = 0 ; norm = 0.0 ;
-	do {
-                // compute rhoj = (r0, r0*)
-                rhoj = 0.0 ;
-                for(i = 0 ; i < Nx ; i++) {
-                	for(j = 0 ; j < Ny ; j++) {
-				rhoj += rj[i][j]*r0_star[i][j] ; 
-			}
-		}
-		if( sqrt(rhoj/double((Nx)*(Ny))) < BICGEPS ) STOP = true ;
-		else {
-			if( BICG_ITER == 0 ) {
-				for(i = 0 ; i < Nx ; i++) {
-               				for(j = 0 ; j <= Ny ; j++) pj[i][j] = rj[i][j]; // p0 = r0 
-				}
-			} else {
-				betaj = (rhoj/rhoj_Minus)*(alphaj/omegaj) ;
-				for(i = 0 ; i < Nx ; i++) {
-                			for(j = 0 ; j < Ny ; j++) {
-                       				pj[i][j] = rj[i][j] + betaj*(pj[i][j] - omegaj*Var[i][j]);
-					}
-				}
-			}
-			// Solve for Upstar, Vpstar from Ku* = u...., where K is the preconditioning matrix
-			for(i = 0 ; i < Nx ; i++) {
-               			for(j = 0 ; j <= Ny ; j++) {
-					// No preconditioning
-					pstar[i][j] = pj[i][j] ;
-				}
-			}
-
-			// compute vj = A*pstar
-	        	for(i = 0 ; i < Nx ; i++) {
-        	        	for(j = 0 ; j < Ny ; j++) {
-			//		if( (i == ip) && (j == jp) ) u[i][j] = 0.0 ;
-					 u[i][j] = pstar[i][j] ;
-				}
-			}
-			ComputeAX() ;
-
-			for(i = 0 ; i < Nx ; i++) {
-        	        	for(j = 0 ; j < Ny ; j++) {
-					Var[i][j] = Temp[i][j] ;
-				}
-			}
-			H1 = 0.0 ;
-                	for(i = 0 ; i < Nx ; i++) {
-                		for(j = 0 ; j < Ny ; j++) {
-					H1 += Var[i][j]*r0_star[i][j] ;
-				}
-			}
-                	alphaj = rhoj/H1 ;
-
-                	// find sj
-			for(i = 0 ; i < Nx ; i++) {
-                		for(j = 0 ; j < Ny ; j++) {
-					sj[i][j] = rj[i][j] - alphaj*Var[i][j] ;
-				}
-			}
-			// Solve for Upstar, Vpstar from Ku* = u...., where K is the preconditioning matrix
-			for(i = 0 ; i < Nx ; i++) {
-               			for(j = 0 ; j < Ny ; j++) {
-					// No preconditioning
-					sstar[i][j] = sj[i][j] ;
-				}
-			}
-			norm = 0.0 ;
-        	        for(i = 0 ; i < Nx ; i++) {
-                		for(j = 0 ; j < Ny ; j++) {
-					norm += sstar[i][j]*sstar[i][j] ;
-				}
-			}
-			norm = sqrt(norm/double((Nx)*(Ny))) ;
-			if( norm < BICGEPS) {
-				STOP = true ; // if ||s||_2 is small x_i = x_{i-1} + alphai*p_i
-				for(i = 0 ; i < Nx ; i++) {
-                			for(j = 0 ; j < Ny ; j++) {
-//						if( (i == ip) && (j == jp) ) Uj[i][j] = 0.0 ;
-						 Uj[i][j] += alphaj*pstar[i][j] ;
-					}
-				}
-			} else {
-
-				// compute t = As
-		        	for(i = 0 ; i < Nx ; i++) {
-        		        	for(j = 0 ; j < Ny ; j++) {
-//						if( (i == ip) && (j == jp) ) u[i][j] = 0.0 ;
-						 u[i][j] = sstar[i][j] ;
-					}
-				}
-				ComputeAX() ;
-	 	               	H1 = H2 = 0.0 ;
-        		        for(i =01 ; i < Nx ; i++) {
-        		        	for(j = 0 ; j <= Ny ; j++) {
-						H1 += Temp[i][j]*sj[i][j] ;
-						H2 += Temp[i][j]*Temp[i][j] ;
-					}
-				}	
-	                	omegaj = H1/H2;
-		
-	                	// find xj 
-	        	        norm = 0.0 ;
-        	        	for(i = 0 ; i < Nx ; i++) {
-        		        	for(j = 0 ; j < Ny ; j++) {
-						H1 = (alphaj*pstar[i][j] + omegaj*sstar[i][j]) ;
-//						if( (i == ip) && (j == jp) ) Uj[i][j] = 0.0 ;
-						 Uj[i][j] += H1 ;
-	        	                	norm += H1*H1 ;
-					}
-				}
-                		norm = sqrt(norm/double((Nx)*(Ny))) ;
-	
-				if(norm < BICGEPS) STOP = true ;
-        		        // find rjplusone
-                		for(i = 0 ; i < Nx ; i++) {
-        		        	for(j = 0 ; j < Ny ; j++) {
-						rj[i][j] = sj[i][j] - omegaj*Temp[i][j];
-					}
-				}
-				rhoj_Minus = rhoj ;
-			}
-		}
-                BICG_ITER++;
-		if(BICG_ITER%100 == 0) cout << BICG_ITER << "\t" << norm <<  endl;
-        }while( (BICG_ITER < 10000) && (!STOP) ) ;
-//        if(BICG_ITER > 1000-3) cout << BICG_ITER << "\t" << norm << endl;
-//	cout << BICG_ITER << "\t" << norm << endl;
-	for(i = 0 ; i < Nx ; i++) {
-		for(j = 0 ; j < Ny ; j++) {
-			u[i][j] = Uj[i][j] ;	
-		}
-	}
-}
-
-int solve()
+int solve_BiCGSTAB() 
 {
+  int i, j ;
+  double *r0_star, *sj, *rj, *pj, *pstar, *sstar ; 
+  double *Temp, *Uj, *Var  ;
+  double rhoj_Minus, alphaj, omegaj, rhoj, betaj, H1, H2 ;
+  double norm, BICGEPS = 1.0E-12; 
+  int BICG_ITER ;
+  bool STOP = false ;
+  int N =  N_cells;
 
+  r0_star = malloc(N*sizeof(double));
+  sj = malloc(N*sizeof(double));
+  rj = malloc(N*sizeof(double));
+  pj = malloc(N*sizeof(double));
+  pstar = malloc(N*sizeof(double));
+  sstar = malloc(N*sizeof(double));
+  Temp = malloc(N*sizeof(double));
+  Uj = malloc(N*sizeof(double));
+  Var = malloc(N*sizeof(double));
 
+  // Start BICGSTAB iterations
+  // set initial solution vector x_0 = (Uj, Vj) 
+  Compute_AX() ;
+  // Initial vector r_0 = b - Ax_0, and r0* = r_0
+  for(i = 0 ; i < N ; i++) {
+    Uj[i] = p[i] ;
+    rj[i] = b[i] - Temp[i] ; 
+    r0_star[i] = rj[i] ;
+  }
 
+  BICG_ITER = 0 ; norm = 0.0 ;
+  do {
+    // compute rhoj = (r0, r0*)
+    rhoj = 0.0 ;
+    for(i = 0 ; i < N ; i++) 
+      rhoj += rj[i]*r0_star[i] ; 
+    if( sqrt(rhoj/((double)N)) < BICGEPS ) STOP = true ;
+    else {
+      if( BICG_ITER == 0 ) {
+        for(i = 0 ; i < N ; i++) 
+          pj[i] = rj[i]; // p0 = r0 
+      } else {
+        betaj = (rhoj/rhoj_Minus)*(alphaj/omegaj) ;
+        for(i = 0 ; i < N ; i++) 
+          pj[i] = rj[i] + betaj*(pj[i] - omegaj*Var[i]);
+      }
+      // Solve for Upstar, Vpstar from Ku* = u...., where K is the preconditioning matrix
+      // No preconditioning
+      for(i = 0 ; i < N ; i++)
+        pstar[i] = pj[i] ;
+      // compute vj = A*pstar
+      for(i = 0 ; i < N ; i++) 
+        p[i] = pstar[i] ;
+      Compute_AX() ;
+
+      for(i = 0 ; i < N ; i++) 
+        Var[i] = Temp[i] ;
+
+      H1 = 0.0 ;
+      for(i = 0 ; i < N ; i++) 
+        H1 += Var[i]*r0_star[i] ;
+      alphaj = rhoj/H1 ;
+      // find sj
+      for(i = 0 ; i < N ; i++) 
+        sj[i] = rj[i] - alphaj*Var[i] ;
+      // Solve for Upstar, Vpstar from Ku* = u..., where K is the preconditioning matrix
+      // No preconditioning
+      for(i = 0 ; i < N ; i++) 
+        sstar[i] = sj[i] ;
+      norm = 0.0 ;
+      for(i = 0 ; i < N ; i++) 
+        norm += sstar[i]*sstar[i] ;
+      norm = sqrt(norm/((double)N)) ;
+      if( norm < BICGEPS) {
+        STOP = true ; //if ||s||_2 is small x_i = x_{i-1}+alphai*p_i
+        for(i = 0 ; i < N ; i++) 
+          Uj[i] += alphaj*pstar[i] ;
+      } else {
+        // compute t = As
+        for(i = 0 ; i < N ; i++) 
+          p[i] = sstar[i] ; 
+        Compute_AX() ;
+        H1 = H2 = 0.0 ;
+        for(i =0 ; i < N ; i++) {
+          H1 += Temp[i]*sj[i] ;
+          H2 += Temp[i]*Temp[i] ;
+        }	
+        omegaj = H1/H2;
+        // find xj 
+        norm = 0.0 ;
+        for(i = 0 ; i < N ; i++) {
+          H1 = (alphaj*pstar[i] + omegaj*sstar[i]) ;
+          Uj[i] += H1 ;
+          norm += H1*H1 ;
+        }
+        norm = sqrt(norm/((double)N)) ;
+        if(norm < BICGEPS) STOP = true ;
+        // find rjplusone
+        for(i = 0 ; i < N ; i++) 
+          rj[i] = sj[i] - omegaj*Temp[i];
+        rhoj_Minus = rhoj ;
+      }
+    }
+    BICG_ITER++;
+    if(BICG_ITER%100 == 0) printf("%d \t %lf \n", BICG_ITER, norm );
+  }while( (BICG_ITER < 10000) && (!STOP) ) ;
+  for(i = 0 ; i < N ; i++)
+    p[i] = Uj[i] ;	
 }
 
+void Compute_AX(){
+return;
+}
+
+void write_vtk()
+{
+  char filename[30]; 
+  sprintf(filename, "output.vtk");
+  FILE *fp = fopen(filename, "w");
+
+  int Nx = N_cells_x+1;
+  int Ny = N_cells_y+1;
+  int Nz = 1; //N_cells_z+1;
+  fprintf(fp,"# vtk DataFile Version 3.0\n");     
+  fprintf(fp,"particle point data\n");           
+  fprintf(fp,"ASCII\n");                         
+  fprintf(fp,"DATASET STRUCTURED_GRID\n");       
+  fprintf(fp,"DIMENSIONS %d %d %d\n",Nx,Ny,Nz);  
+  fprintf(fp,"POINTS %d double\n",Nx*Ny*Nz);
+  int l,m, i;
+  for(m = 0; m<Ny; m++){
+    for( l = 0; l<Nx ; l ++){
+      fprintf(fp,"%2.8lf %2.8lf 0.0\n",l*dx , m*dy);
+    }
+  }
+
+  fprintf(fp,"CELL_DATA %d\n SCALARS pressure double 1\n LOOKUP_TABLE default\n",N_cells);
+  
+    for( l = 0; l<N_cells_x ; l ++){
+  for(m = 0; m<N_cells_y; m++){
+      fprintf(fp,"%2.8lf ",p[l*N_cells_x + m]);
+    }
+  }
+      
+  
+  
+//  fprintf(fp,"%2.8lf %2.8lf %2.8lf\n", x.x, x.y, x.z);
+
+
+ return;
+}
+void set_ghosts()
+{
+  int i,l,m;
+  for(i=0;i<N_cells;i++){
+    l = i%N_cells_x;
+    m = (int) i/N_cells_x;
+    if(l==0 || l == N_cells_x-1 || m == 0 || m == N_cells_y-1)
+      bc[i]=DIRICHLET;
+    else
+      bc[i] = NONE;
+  }
+  return;
+}
+
+void set_bc()
+{
+  int i;
+  for(i=0;i<N_cells;i++){
+    if(bc[i] == DIRICHLET){
+    int l = i%N_cells_x, m = (int) i/N_cells_x;
+    if(l==0 || l==N_cells_x-1)
+      p[i] = 50.0;
+    else if(m==0)
+      p[i] = 0.0;
+    else
+      p[i] = 100.0;
+    }
+  }
+  return;
+}
