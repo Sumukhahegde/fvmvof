@@ -9,7 +9,7 @@
 /* Code to solve NS. First step, solve poisson equation in 2D */
 /* Define variables */
 
-void Compute_AX(void);
+void Compute_AX(double * );
 int solve_BiCGSTAB(void);
 void write_vtk(void);
 void set_ghosts(void);
@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
  *write p and the grid to file */
   double l_x = 1.0;
   double l_y = 1.0;
-  N_cells_x = 10 + 2;
-  N_cells_y = 10 + 2;
+  N_cells_x = 100 + 2;
+  N_cells_y = 100 + 2;
   N_cells_z = 1;
   N_cells = N_cells_x * N_cells_y * N_cells_z ;
 
@@ -89,7 +89,7 @@ int solve_BiCGSTAB()
 
   // Start BICGSTAB iterations
   // set initial solution vector x_0 = (Uj, Vj) 
-  Compute_AX() ;
+  Compute_AX(Temp) ;
   // Initial vector r_0 = b - Ax_0, and r0* = r_0
   for(i = 0 ; i < N ; i++) {
     Uj[i] = p[i] ;
@@ -120,7 +120,7 @@ int solve_BiCGSTAB()
       // compute vj = A*pstar
       for(i = 0 ; i < N ; i++) 
         p[i] = pstar[i] ;
-      Compute_AX() ;
+      Compute_AX(Temp) ;
 
       for(i = 0 ; i < N ; i++) 
         Var[i] = Temp[i] ;
@@ -148,7 +148,7 @@ int solve_BiCGSTAB()
         // compute t = As
         for(i = 0 ; i < N ; i++) 
           p[i] = sstar[i] ; 
-        Compute_AX() ;
+        Compute_AX(Temp) ;
         H1 = H2 = 0.0 ;
         for(i =0 ; i < N ; i++) {
           H1 += Temp[i]*sj[i] ;
@@ -177,8 +177,46 @@ int solve_BiCGSTAB()
     p[i] = Uj[i] ;	
 }
 
-void Compute_AX(){
-return;
+void Compute_AX(double * Temp){
+
+  int i,l,m;
+double phi_w, phi_e, phi_n, phi_s;
+  for(i=0;i<N_cells;i++){
+    if(bc[i] == DIRICHLET){
+      Temp[i] = p[i];
+    }else{
+      l= i%N_cells_x;
+      m =(int) i/N_cells_x;
+      int south = (m-1)*N_cells_x + l, north =(m+1)*N_cells_x + l,
+          west =m*N_cells_x + (l-1), east = m*N_cells_x + (l+1);
+      if(bc[south] == DIRICHLET)
+        phi_s = 2.0*p[south] - p[i];
+      else if(bc[south] == NEUMANN)
+        phi_s = p[i];
+      else phi_s = p[south];
+
+      if(bc[north] == DIRICHLET)
+        phi_n = 2.0*p[north] - p[i];
+      else if(bc[north] == NEUMANN)
+        phi_n = p[i];
+      else phi_n = p[north];
+
+      if(bc[east] == DIRICHLET)
+        phi_e = 2.0*p[east] - p[i];
+      else if(bc[east] == NEUMANN)
+        phi_e = p[i];
+      else phi_e = p[east];
+
+      if(bc[west] == DIRICHLET)
+        phi_w = 2.0*p[west] - p[i];
+      else if(bc[west] == NEUMANN)
+        phi_w = p[i];
+      else phi_w = p[west];
+
+      Temp[i] = -2.0*(dy/dx + dx/dy)*p[i] + phi_w*dy/dx + phi_e * dy/dx + phi_s * dx/dy + phi_n * dx/dy ;    
+    }
+  }
+  return;
 }
 
 void write_vtk()
@@ -237,13 +275,17 @@ void set_bc()
   int i;
   for(i=0;i<N_cells;i++){
     if(bc[i] == DIRICHLET){
-    int l = i%N_cells_x, m = (int) i/N_cells_x;
-    if(l==0 || l==N_cells_x-1)
-      p[i] = 50.0;
-    else if(m==0)
-      p[i] = 0.0;
-    else
-      p[i] = 100.0;
+      int l = i%N_cells_x, m = (int) i/N_cells_x;
+      if(l==0 ){
+        p[i] = 50.0;
+      }else if( l==N_cells_x-1){
+        p[i] = 50.0;
+      }else if(m==0){
+        p[i] = 0.0;
+      }else{
+        p[i] = 100.0 ;
+      }
+      b[i] = p[i];
     }
   }
   return;
