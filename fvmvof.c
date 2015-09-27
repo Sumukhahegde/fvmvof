@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
  *write p and the grid to file */
   double l_x = 1.0;
   double l_y = 1.0;
-  N_cells_x = 100 + 2;
+  N_cells_x = 50 + 2;
   N_cells_y = 100 + 2;
   N_cells_z = 1;
   N_cells = N_cells_x * N_cells_y * N_cells_z ;
@@ -227,24 +227,25 @@ void write_vtk()
 
   int Nx = N_cells_x+1;
   int Ny = N_cells_y+1;
-  int Nz = 1; //N_cells_z+1;
+  int Nz = 2; //N_cells_z+1;
   fprintf(fp,"# vtk DataFile Version 3.0\n");     
   fprintf(fp,"particle point data\n");           
   fprintf(fp,"ASCII\n");                         
   fprintf(fp,"DATASET STRUCTURED_GRID\n");       
   fprintf(fp,"DIMENSIONS %d %d %d\n",Nx,Ny,Nz);  
   fprintf(fp,"POINTS %d double\n",Nx*Ny*Nz);
-  int l,m, i;
+  int l,m,n, i;
+  for(n = 0; n<Nz; n++){
   for(m = 0; m<Ny; m++){
     for( l = 0; l<Nx ; l ++){
-      fprintf(fp,"%2.8lf %2.8lf 0.0\n",l*dx , m*dy);
+      fprintf(fp,"%2.8lf %2.8lf %2.8lf\n",l*dx , m*dy, n*1.0);
     }
   }
-
+  }
   fprintf(fp,"CELL_DATA %d\n SCALARS pressure double 1\n LOOKUP_TABLE default\n",N_cells);
   
-    for( l = 0; l<N_cells_x ; l ++){
-  for(m = 0; m<N_cells_y; m++){
+    for( l = 0; l<N_cells_y ; l ++){
+  for(m = 0; m<N_cells_x; m++){
       fprintf(fp,"%2.8lf ",p[l*N_cells_x + m]);
     }
   }
@@ -266,6 +267,9 @@ void set_ghosts()
       bc[i]=DIRICHLET;
     else
       bc[i] = NONE;
+
+    if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
+      bc[i]=DIRICHLET;
   }
   return;
 }
