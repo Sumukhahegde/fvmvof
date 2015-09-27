@@ -51,10 +51,12 @@ int main(int argc, char *argv[])
   //initial and boundary conditions
   int i,l,m;
   for(i=0;i<N_cells;i++){
-    b[i] = 0.0;
-    p[i] = 0.0;
     l = i%N_cells_x;
     m = (int) i/N_cells_x;
+    b[i] = 0.0;
+    p[i] = 0.0;
+    if(l>0 && l < N_cells_x-1 && m > 0 && m<N_cells_y-1)
+      b[i] = sin(2.0*PI*(l*dx - dx/2.0))*sin(2.0*PI*(m*dy -dy/2.0));
   }
   set_bc();
   //Boundary conditions are: xmin: 50 ymin: 0 xmax: 50 ymax: 100 
@@ -266,12 +268,14 @@ void set_ghosts()
     l = i%N_cells_x;
     m = (int) i/N_cells_x;
     if(l==0 || l == N_cells_x-1 || m == 0 || m == N_cells_y-1)
-      bc[i]=AMBIENT;
+  //    bc[i]=AMBIENT;
+      bc[i] = WALL;
     else
       bc[i] = NONE;
-
+/*
     if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
-      bc[i]=AMBIENT;
+      bc[i]=WALL;
+      */
   }
   return;
 }
