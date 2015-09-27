@@ -17,8 +17,9 @@ int N_cells, N_cells_x, N_cells_y, N_cells_z ;
 int N_points, N_points_x, N_points_y, N_points_z ;
 typedef enum{
   NONE,
-  NEUMANN,
-  DIRICHLET
+  WALL,
+  AMBIENT,
+  INLET
 } BCs;
 BCs *bc;
 #endif

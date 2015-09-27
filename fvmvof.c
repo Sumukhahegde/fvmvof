@@ -182,34 +182,34 @@ void Compute_AX(double * Temp){
   int i,l,m;
 double phi_w, phi_e, phi_n, phi_s;
   for(i=0;i<N_cells;i++){
-    if(bc[i] == DIRICHLET){
+    if(bc[i] == AMBIENT){
       Temp[i] = p[i];
     }else{
       l= i%N_cells_x;
       m =(int) i/N_cells_x;
       int south = (m-1)*N_cells_x + l, north =(m+1)*N_cells_x + l,
           west =m*N_cells_x + (l-1), east = m*N_cells_x + (l+1);
-      if(bc[south] == DIRICHLET)
+      if(bc[south] == AMBIENT)
         phi_s = 2.0*p[south] - p[i];
-      else if(bc[south] == NEUMANN)
+      else if(bc[south] == WALL || bc[south] == INLET)
         phi_s = p[i];
       else phi_s = p[south];
 
-      if(bc[north] == DIRICHLET)
+      if(bc[north] == AMBIENT)
         phi_n = 2.0*p[north] - p[i];
-      else if(bc[north] == NEUMANN)
+      else if(bc[north] == WALL || bc[north] == INLET)
         phi_n = p[i];
       else phi_n = p[north];
 
-      if(bc[east] == DIRICHLET)
+      if(bc[east] == AMBIENT)
         phi_e = 2.0*p[east] - p[i];
-      else if(bc[east] == NEUMANN)
+      else if(bc[east] == WALL || bc[east] == INLET)
         phi_e = p[i];
       else phi_e = p[east];
 
-      if(bc[west] == DIRICHLET)
+      if(bc[west] == AMBIENT)
         phi_w = 2.0*p[west] - p[i];
-      else if(bc[west] == NEUMANN)
+      else if(bc[west] == WALL || bc[west] == INLET)
         phi_w = p[i];
       else phi_w = p[west];
 
@@ -242,16 +242,18 @@ void write_vtk()
     }
   }
   }
-  fprintf(fp,"CELL_DATA %d\n SCALARS pressure double 1\n LOOKUP_TABLE default\n",N_cells);
-  
-    for( l = 0; l<N_cells_y ; l ++){
-  for(m = 0; m<N_cells_x; m++){
-      fprintf(fp,"%2.8lf ",p[l*N_cells_x + m]);
+  fprintf(fp,"CELL_DATA %d\n SCALARS pressure double 1\n LOOKUP_TABLE default\n",N_cells);  
+  for( l = 0; l<N_cells_y ; l ++){
+    for(m = 0; m<N_cells_x; m++){
+      fprintf(fp,"%2.8lf\n",p[l*N_cells_x + m]);
     }
   }
-      
-  
-  
+  fprintf(fp,"SCALARS boundary int 1\n LOOKUP_TABLE default\n");  
+    for( l = 0; l<N_cells_y ; l ++){
+  for(m = 0; m<N_cells_x; m++){
+      fprintf(fp,"%d\n",bc[l*N_cells_x + m]);
+    }
+  }
 //  fprintf(fp,"%2.8lf %2.8lf %2.8lf\n", x.x, x.y, x.z);
 
 
@@ -264,12 +266,12 @@ void set_ghosts()
     l = i%N_cells_x;
     m = (int) i/N_cells_x;
     if(l==0 || l == N_cells_x-1 || m == 0 || m == N_cells_y-1)
-      bc[i]=DIRICHLET;
+      bc[i]=AMBIENT;
     else
       bc[i] = NONE;
 
     if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
-      bc[i]=DIRICHLET;
+      bc[i]=AMBIENT;
   }
   return;
 }
@@ -278,7 +280,7 @@ void set_bc()
 {
   int i;
   for(i=0;i<N_cells;i++){
-    if(bc[i] == DIRICHLET){
+    if(bc[i] == AMBIENT){
       int l = i%N_cells_x, m = (int) i/N_cells_x;
       if(l==0 ){
         p[i] = 50.0;
