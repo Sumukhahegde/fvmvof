@@ -6,6 +6,7 @@
 
 double *r_x, *r_y, *r_y,
        *u_x, *u_y, *u_z,
+       *ust_x, *ust_y, *ust_z,
        *rho,
        *p,
        *omega_x, *omega_y, *omega_z,

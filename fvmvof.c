@@ -36,6 +36,9 @@ int main(int argc, char *argv[])
   u_x = malloc(N_cells*sizeof(double));
   u_y = malloc(N_cells*sizeof(double));
   u_z = malloc(N_cells*sizeof(double));
+  ust_x = malloc(N_cells*sizeof(double));
+  ust_y = malloc(N_cells*sizeof(double));
+  ust_z = malloc(N_cells*sizeof(double));
   p = malloc(N_cells*sizeof(double));
   rho = malloc(N_cells*sizeof(double));
   omega_z = malloc(N_cells*sizeof(double));
@@ -51,19 +54,20 @@ int main(int argc, char *argv[])
   //initial and boundary conditions
   int i,l,m;
   for(i=0;i<N_cells;i++){
-    l = i%N_cells_x;
-    m = (int) i/N_cells_x;
-    b[i] = 0.0;
+  //  l = i%N_cells_x;
+  //  m = (int) i/N_cells_x;
+  //  b[i] = 0.0;
     p[i] = 0.0;
-    if(l>0 && l < N_cells_x-1 && m > 0 && m<N_cells_y-1)
-      b[i] = sin(2.0*PI*(l*dx - dx/2.0))*sin(2.0*PI*(m*dy -dy/2.0));
+    u_x[i] = 0.0;
+    u_y[i] = 0.0;
+    u_z[i] = 0.0;
+    //if(l>0 && l < N_cells_x-1 && m > 0 && m<N_cells_y-1)
+    //  b[i] = sin(2.0*PI*(l*dx - dx/2.0))*sin(2.0*PI*(m*dy -dy/2.0));
   }
   set_bc();
-  //Boundary conditions are: xmin: 50 ymin: 0 xmax: 50 ymax: 100 
-  double p_bc_W = 50.0, p_bc_E=50.0, p_bc_S=0.0, p_bc_N=100.0;
-
+  //Solve convection, get u star
+  
   int test  = solve_BiCGSTAB();
-
   write_vtk();
   return 0;
 }
@@ -267,9 +271,11 @@ void set_ghosts()
   for(i=0;i<N_cells;i++){
     l = i%N_cells_x;
     m = (int) i/N_cells_x;
-    if(l==0 || l == N_cells_x-1 || m == 0 || m == N_cells_y-1)
+    if(l==0 || l == N_cells_x-1 || m == 0 )
   //    bc[i]=AMBIENT;
-      bc[i] = WALL;
+      bc[i] = WALL; // for LDC
+    else if ( m == N_cells_y-1)
+      bc[i] = INLET;
     else
       bc[i] = NONE;
 /*
@@ -284,8 +290,8 @@ void set_bc()
 {
   int i;
   for(i=0;i<N_cells;i++){
-    if(bc[i] == AMBIENT){
       int l = i%N_cells_x, m = (int) i/N_cells_x;
+    if(bc[i] == AMBIENT){
       if(l==0 ){
         p[i] = 50.0;
       }else if( l==N_cells_x-1){
@@ -296,6 +302,8 @@ void set_bc()
         p[i] = 100.0 ;
       }
       b[i] = p[i];
+    }if(bc[i]==INLET){
+      u_x[i] =1.0; 
     }
   }
   return;
