@@ -13,19 +13,10 @@ void Compute_AX(double * );
 int solve_BiCGSTAB(void);
 void write_vtk(void);
 void set_ghosts(void);
-void set_bc(void);
+void set_bc(double * var , BC_type * bc, double * bc_value);
 
 int main(int argc, char *argv[])
 {
-
-/* define grid sizes  - cell centered
- * allocate arrays for pos, vel 
- * allocate RHS of poisson
- * set BCs
- * write function for compute_Ax
- * call bicgstab - which calls compute_Ax
- * we get p 
- *write p and the grid to file */
   double l_x = 1.0;
   double l_y = 1.0;
   N_cells_x = 50 + 2;
@@ -33,18 +24,22 @@ int main(int argc, char *argv[])
   N_cells_z = 1;
   N_cells = N_cells_x * N_cells_y * N_cells_z ;
 
-  u_x = malloc(N_cells*sizeof(double));
-  u_y = malloc(N_cells*sizeof(double));
-  u_z = malloc(N_cells*sizeof(double));
-  ust_x = malloc(N_cells*sizeof(double));
-  ust_y = malloc(N_cells*sizeof(double));
-  ust_z = malloc(N_cells*sizeof(double));
-  p = malloc(N_cells*sizeof(double));
-  rho = malloc(N_cells*sizeof(double));
+  u_x =     malloc(N_cells*sizeof(double));
+  u_y =     malloc(N_cells*sizeof(double));
+  u_z =     malloc(N_cells*sizeof(double));
+  ust_x =   malloc(N_cells*sizeof(double));
+  ust_y =   malloc(N_cells*sizeof(double));
+  ust_z =   malloc(N_cells*sizeof(double));
+  p =       malloc(N_cells*sizeof(double));
+  rho =     malloc(N_cells*sizeof(double));
   omega_z = malloc(N_cells*sizeof(double));
   omega_x = malloc(N_cells*sizeof(double));
   omega_y = malloc(N_cells*sizeof(double));
-  bc = malloc(N_cells *sizeof(BCs));
+  bc =      malloc(N_cells*sizeof(BC_type));
+  p_bc =    malloc(N_cells*sizeof(BC_type));
+  u_x_bc =  malloc(N_cells*sizeof(BC_type));
+  u_y_bc =  malloc(N_cells*sizeof(BC_type));
+  u_z_bc =  malloc(N_cells*sizeof(BC_type));
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
@@ -54,19 +49,24 @@ int main(int argc, char *argv[])
   //initial and boundary conditions
   int i,l,m;
   for(i=0;i<N_cells;i++){
-  //  l = i%N_cells_x;
-  //  m = (int) i/N_cells_x;
-  //  b[i] = 0.0;
     p[i] = 0.0;
     u_x[i] = 0.0;
     u_y[i] = 0.0;
     u_z[i] = 0.0;
-    //if(l>0 && l < N_cells_x-1 && m > 0 && m<N_cells_y-1)
-    //  b[i] = sin(2.0*PI*(l*dx - dx/2.0))*sin(2.0*PI*(m*dy -dy/2.0));
   }
-  set_bc();
-  //Solve convection, get u star
-  
+  for(i=0;i<8;i++){
+    u_x_bc_val[i] = 0.0;
+    u_y_bc_val[i] = 0.0;
+    u_z_bc_val[i] = 0.0;
+    p_bc_val[i] = 0.0;
+  }
+  u_x_bc_val[YMAX] = 1.0;
+  //set_bc();
+  set_bc(p, p_bc, p_bc_val);
+  set_bc(u_x, u_x_bc, u_x_bc_val);
+  set_bc(u_y, u_y_bc, u_y_bc_val);
+  set_bc(u_z, u_z_bc, u_z_bc_val);
+  //Solve convection, get u star 
   int test  = solve_BiCGSTAB();
   write_vtk();
   return 0;
@@ -102,7 +102,6 @@ int solve_BiCGSTAB()
     rj[i] = b[i] - Temp[i] ; 
     r0_star[i] = rj[i] ;
   }
-
   BICG_ITER = 0 ; norm = 0.0 ;
   do {
     // compute rhoj = (r0, r0*)
@@ -127,10 +126,8 @@ int solve_BiCGSTAB()
       for(i = 0 ; i < N ; i++) 
         p[i] = pstar[i] ;
       Compute_AX(Temp) ;
-
       for(i = 0 ; i < N ; i++) 
         Var[i] = Temp[i] ;
-
       H1 = 0.0 ;
       for(i = 0 ; i < N ; i++) 
         H1 += Var[i]*r0_star[i] ;
@@ -180,42 +177,43 @@ int solve_BiCGSTAB()
     if(BICG_ITER%100 == 0) printf("%d \t %lf \n", BICG_ITER, norm );
   }while( (BICG_ITER < 10000) && (!STOP) ) ;
   for(i = 0 ; i < N ; i++)
-    p[i] = Uj[i] ;	
+    p[i] = Uj[i] ;
+  return 0;
 }
 
 void Compute_AX(double * Temp){
-
   int i,l,m;
-double phi_w, phi_e, phi_n, phi_s;
+  double phi_w, phi_e, phi_n, phi_s;
   for(i=0;i<N_cells;i++){
-    if(bc[i] == AMBIENT){
+    if(p_bc[i] == DIRICHLET){
       Temp[i] = p[i];
     }else{
       l= i%N_cells_x;
       m =(int) i/N_cells_x;
       int south = (m-1)*N_cells_x + l, north =(m+1)*N_cells_x + l,
           west =m*N_cells_x + (l-1), east = m*N_cells_x + (l+1);
-      if(bc[south] == AMBIENT)
-        phi_s = 2.0*p[south] - p[i];
-      else if(bc[south] == WALL || bc[south] == INLET)
-        phi_s = p[i];
-      else phi_s = p[south];
+ //     if(patch[south] != NONE )
+        if(p_bc[south] == DIRICHLET)
+          phi_s = 2.0*p[south] - p[i];
+        else if(p_bc[south] == NEUMANN)
+          phi_s = p[i];
+        else phi_s = p[south];
 
-      if(bc[north] == AMBIENT)
+      if(p_bc[north] == DIRICHLET)
         phi_n = 2.0*p[north] - p[i];
-      else if(bc[north] == WALL || bc[north] == INLET)
+      else if(p_bc[north] == NEUMANN)
         phi_n = p[i];
       else phi_n = p[north];
 
-      if(bc[east] == AMBIENT)
+      if(p_bc[east] == DIRICHLET)
         phi_e = 2.0*p[east] - p[i];
-      else if(bc[east] == WALL || bc[east] == INLET)
+      else if(p_bc[east] == NEUMANN)
         phi_e = p[i];
       else phi_e = p[east];
 
-      if(bc[west] == AMBIENT)
+      if(p_bc[west] == DIRICHLET)
         phi_w = 2.0*p[west] - p[i];
-      else if(bc[west] == WALL || bc[west] == INLET)
+      else if(p_bc[west] == NEUMANN)
         phi_w = p[i];
       else phi_w = p[west];
 
@@ -271,39 +269,36 @@ void set_ghosts()
   for(i=0;i<N_cells;i++){
     l = i%N_cells_x;
     m = (int) i/N_cells_x;
-    if(l==0 || l == N_cells_x-1 || m == 0 )
-  //    bc[i]=AMBIENT;
-      bc[i] = WALL; // for LDC
-    else if ( m == N_cells_y-1)
-      bc[i] = INLET;
-    else
-      bc[i] = NONE;
-/*
-    if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
-      bc[i]=WALL;
-      */
+    if(l==0 || l == N_cells_x-1 || m == 0|| m == N_cells_y-1 ){
+      //bc[i]=AMBIENT;
+      p_bc[i]   = NEUMANN; 
+      u_x_bc[i] = DIRICHLET; 
+      u_y_bc[i] = DIRICHLET; 
+    }else{
+      //bc[i] = NONE;
+      p_bc[i]   = NONE; 
+      u_x_bc[i] = NONE; 
+      u_y_bc[i] = NONE; 
+      /*
+         if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
+         bc[i]=WALL;
+         */
+    }
   }
   return;
 }
 
-void set_bc()
+void set_bc(double * var , BC_type * bc, double * bc_value)
 {
   int i;
   for(i=0;i<N_cells;i++){
-      int l = i%N_cells_x, m = (int) i/N_cells_x;
-    if(bc[i] == AMBIENT){
-      if(l==0 ){
-        p[i] = 50.0;
-      }else if( l==N_cells_x-1){
-        p[i] = 50.0;
-      }else if(m==0){
-        p[i] = 0.0;
-      }else{
-        p[i] = 100.0 ;
-      }
-      b[i] = p[i];
-    }if(bc[i]==INLET){
-      u_x[i] =1.0; 
+    int l = i%N_cells_x, m = (int) i/N_cells_x, n=0;
+    if(bc[i] == DIRICHLET){
+      if(l==0)                var[i] = bc_value[XMIN];
+      else if(l==N_cells_x-1) var[i] = bc_value[XMAX];
+      else if(m==0)           var[i] = bc_value[YMIN];
+      else if(m==N_cells_y-1) var[i] = bc_value[YMAX];
+      else                    var[i] = bc_value[SOLID];
     }
   }
   return;

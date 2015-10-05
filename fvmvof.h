@@ -17,10 +17,37 @@ double mu, CFL, p_ref, rho_ref, u_ref;
 int N_cells, N_cells_x, N_cells_y, N_cells_z ;
 int N_points, N_points_x, N_points_y, N_points_z ;
 typedef enum{
+  DOMAIN,
+  XMIN,
+  XMAX,
+  YMIN,
+  YMAX,
+  ZMIN,
+  ZMAX,
+  SOLID,
+} PATCH_type;
+PATCH_type patch;
+
+typedef enum{
+  POISSON,
+  HELMHOLTZ
+}equation_type;
+/*
+typedef enum{
   NONE,
   WALL,
   AMBIENT,
   INLET
-} BCs;
-BCs *bc;
+} BC_type;
+*/
+typedef enum{
+  NONE,
+  DIRICHLET,
+  NEUMANN,
+} BC_type;
+
+BC_type *bc, *p_bc, *u_x_bc, *u_y_bc, *u_z_bc;
+//BC_type p_bc[8], u_x_bc[8], u_y_bc[8], u_z_bc[8];
+double p_bc_val[8],u_x_bc_val[8],u_y_bc_val[8],u_z_bc_val[8];
+
 #endif
