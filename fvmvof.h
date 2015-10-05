@@ -14,17 +14,17 @@ double *r_x, *r_y, *r_y,
        *b;
 double dx,dy,dz,dt;
 double mu, CFL, p_ref, rho_ref, u_ref;
-int N_cells, N_cells_x, N_cells_y, N_cells_z ;
+int N_cells, N_cells_x, N_cells_y, N_cells_z ,N_flux_x,N_flux_y;
 int N_points, N_points_x, N_points_y, N_points_z ;
 typedef enum{
-  DOMAIN,
+  INSIDE,
   XMIN,
   XMAX,
   YMIN,
   YMAX,
   ZMIN,
   ZMAX,
-  SOLID,
+  SOLID
 } PATCH_type;
 PATCH_type patch;
 

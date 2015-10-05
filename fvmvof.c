@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
   N_cells_y = 100 + 2;
   N_cells_z = 1;
   N_cells = N_cells_x * N_cells_y * N_cells_z ;
+  N_flux_x = (N_cells_x+1) * N_cells_y * N_cells_z ;
+  N_flux_y = N_cells_x * (N_cells_y +1) * N_cells_z ;
 
   u_x =     malloc(N_cells*sizeof(double));
   u_y =     malloc(N_cells*sizeof(double));
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
     u_z_bc_val[i] = 0.0;
     p_bc_val[i] = 0.0;
   }
-  u_x_bc_val[YMAX] = 1.0;
+  u_x_bc_val[4] = 1.0;
   //set_bc();
   set_bc(p, p_bc, p_bc_val);
   set_bc(u_x, u_x_bc, u_x_bc_val);
