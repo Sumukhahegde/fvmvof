@@ -15,36 +15,29 @@ void write_vtk(void);
 void set_ghosts(void);
 void set_bc(double * var , BC_type * bc, double * bc_value);
 
+void allocate_variable(field_variable * phi);
 int main(int argc, char *argv[])
 {
   double l_x = 1.0;
   double l_y = 1.0;
-  N_cells_x = 50 + 2;
-  N_cells_y = 100 + 2;
-  N_cells_z = 1;
-  N_cells = N_cells_x * N_cells_y * N_cells_z ;
-  N_flux_x = (N_cells_x+1) * N_cells_y * N_cells_z ;
-  N_flux_y = N_cells_x * (N_cells_y +1) * N_cells_z ;
 
-  u_x =     malloc(N_cells*sizeof(double));
-  u_y =     malloc(N_cells*sizeof(double));
-  u_z =     malloc(N_cells*sizeof(double));
-  ust_x =   malloc(N_cells*sizeof(double));
-  ust_y =   malloc(N_cells*sizeof(double));
-  ust_z =   malloc(N_cells*sizeof(double));
-  p =       malloc(N_cells*sizeof(double));
-  rho =     malloc(N_cells*sizeof(double));
-  omega_z = malloc(N_cells*sizeof(double));
-  omega_x = malloc(N_cells*sizeof(double));
-  omega_y = malloc(N_cells*sizeof(double));
-  bc =      malloc(N_cells*sizeof(BC_type));
-  p_bc =    malloc(N_cells*sizeof(BC_type));
-  u_x_bc =  malloc(N_cells*sizeof(BC_type));
-  u_y_bc =  malloc(N_cells*sizeof(BC_type));
-  u_z_bc =  malloc(N_cells*sizeof(BC_type));
+  p = malloc(sizeof(field_variable));
+  u_x = malloc(sizeof(field_variable));
+  u_y = malloc(sizeof(field_variable));
+  // cell dimensions of each field variable
+  p->N_x = 50+2; p->N_y = 100+2; p->N_z = 1;
+  u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
+  u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
+
+  allocate_variable(p);
+  allocate_variable(u_x);
+  allocate_variable(u_y);
+
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
+  
+  /*
   // only for poisson ;  
   b = malloc(N_cells*sizeof(double));
   set_ghosts();
@@ -70,10 +63,10 @@ int main(int argc, char *argv[])
   set_bc(u_z, u_z_bc, u_z_bc_val);
   //Solve convection, get u star 
   int test  = solve_BiCGSTAB();
-  write_vtk();
+  write_vtk(); */
   return 0;
 }
-
+/*
 int solve_BiCGSTAB() 
 {
   int i, j ;
@@ -281,15 +274,15 @@ void set_ghosts()
       p_bc[i]   = NONE; 
       u_x_bc[i] = NONE; 
       u_y_bc[i] = NONE; 
-      /*
-         if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
-         bc[i]=WALL;
-         */
+      //
+      //   if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
+      //   bc[i]=WALL;
+      //   
     }
   }
   return;
 }
-
+/*
 void set_bc(double * var , BC_type * bc, double * bc_value)
 {
   int i;
@@ -304,4 +297,12 @@ void set_bc(double * var , BC_type * bc, double * bc_value)
     }
   }
   return;
+}
+*/
+void allocate_variable(field_variable * phi)
+{
+  phi->N = p->N_x * p->N_y * p->N_z;
+  phi->val = malloc(phi->N * sizeof(double));
+  phi->bc = malloc(phi->N * sizeof(BC_type));
+  return ;
 }
