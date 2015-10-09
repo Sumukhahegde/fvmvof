@@ -48,6 +48,7 @@ field_variable  *r_x, *r_y, *r_y,
        *ust_x, *ust_y, *ust_z,
        *rho,
        *p,
+       *phi,
        *omega_x, *omega_y, *omega_z,
        *a_w,*a_e,*a_s,*a_n,*a_t,*a_b,
        *b;

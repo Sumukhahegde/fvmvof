@@ -21,21 +21,34 @@ int main(int argc, char *argv[])
   double l_x = 1.0;
   double l_y = 1.0;
 
-  p = malloc(sizeof(field_variable));
+  p   = malloc(sizeof(field_variable));
+  phi   = malloc(sizeof(field_variable));
   u_x = malloc(sizeof(field_variable));
   u_y = malloc(sizeof(field_variable));
   // cell dimensions of each field variable
   p->N_x = 50+2; p->N_y = 100+2; p->N_z = 1;
+  phi->N_x = 50+2; phi->N_y = 100+2; phi->N_z = 1;
   u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
   u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
 
   allocate_variable(p);
+  allocate_variable(phi);
   allocate_variable(u_x);
   allocate_variable(u_y);
 
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
+  
+  //initial velocity field for advection
+  for(i=0;i<N_cells;i++){
+      l= i%N_cells_x;
+      m =(int) i/N_cells_x;
+    p[i] = 0.0;
+    u_x[i] = 0.0;
+    u_y[i] = 0.0;
+    u_z[i] = 0.0;
+  }
   
   /*
   // only for poisson ;  
