@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
     u_x[i] = 0.0;
     u_y[i] = 0.0;
     u_z[i] = 0.0;
+  if
   }
   
   /*
