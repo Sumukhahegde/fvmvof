@@ -90,10 +90,10 @@ double * temp = malloc(N_cells*sizeof(double));
   set_bc(p); set_bc(u_x);
   set_bc(u_y);
   set_bc(u_z);
-  dt = 0.0001;
+  dt = 0.001;
     //advection
     int qq;
-    for(qq = 0;  qq<5000 ; qq++){
+    for(qq = 0;  qq<300 ; qq++){
       advection(phi, u_x, u_y, u_z, temp );
       for( i=0;i<N_cells;i++){
         phi->val[i] = phi->val[i] - dt*temp[i];
