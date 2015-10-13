@@ -25,16 +25,30 @@ int main(int argc, char *argv[])
   phi   = malloc(sizeof(field_variable));
   u_x = malloc(sizeof(field_variable));
   u_y = malloc(sizeof(field_variable));
+  acc_x = malloc(sizeof(field_variable));
+  acc_y = malloc(sizeof(field_variable));
+  div = malloc(sizeof(field_variable));
   // cell dimensions of each field variable
   p->N_x = 50+2; p->N_y = 100+2; p->N_z = 1;
   phi->N_x = 50+2; phi->N_y = 100+2; phi->N_z = 1;
-  u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
-  u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
+  u_x->N_x = 50+2; u_x->N_y = 100+2; u_x->N_z = 1;
+  u_y->N_x = 50+2; u_y->N_y = 100+2; u_y->N_z = 1;
+  acc_x->N_x = 50+2; acc_x->N_y = 100+2; acc_x->N_z = 1;
+  acc_y->N_x = 50+2; acc_y->N_y = 100+2; acc_y->N_z = 1;
+  div->N_x = 50+2; div->N_y = 100+2; div->N_z = 1;
+//  u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
+//  u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
 
   allocate_variable(p);
   allocate_variable(phi);
   allocate_variable(u_x);
+  allocate_variable(acc_x);
   allocate_variable(u_y);
+  allocate_variable(div);
+  allocate_variable(acc_y);
+ 
+
+  u_x->bc_val[YMAX] = 1.0;
 
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
@@ -46,15 +60,23 @@ int main(int argc, char *argv[])
       m =(int) i/N_cells_x;
     p[i] = 0.0;
     u_x[i] = 0.0;
+  //  if(l==0)
+//      u_x[i] = 1.0;
     u_y[i] = 0.0;
     u_z[i] = 0.0;
   if
   }
-  
+  set_ghosts();
+  set_bc(p, p->bc, p->bc_val);
+  set_bc(u_x, u_x->bc, u_x->bc_val);
+  set_bc(u_y, u_y->bc, u_y->bc_val);
+  set_bc(u_z, u_z->bc, u_z->bc_val);
+ dt = 0.01;
+    //advection
+advection_2d();
   /*
   // only for poisson ;  
   b = malloc(N_cells*sizeof(double));
-  set_ghosts();
   //initial and boundary conditions
   int i,l,m;
   for(i=0;i<N_cells;i++){
@@ -271,7 +293,8 @@ void write_vtk()
 
 
  return;
-}
+}*/
+
 void set_ghosts()
 {
   int i,l,m;
@@ -296,7 +319,6 @@ void set_ghosts()
   }
   return;
 }
-/*
 void set_bc(double * var , BC_type * bc, double * bc_value)
 {
   int i;
@@ -312,11 +334,15 @@ void set_bc(double * var , BC_type * bc, double * bc_value)
   }
   return;
 }
-*/
+
 void allocate_variable(field_variable * phi)
 {
   phi->N = p->N_x * p->N_y * p->N_z;
   phi->val = malloc(phi->N * sizeof(double));
   phi->bc = malloc(phi->N * sizeof(BC_type));
   return ;
+}
+void advection_2d(void )
+{
+
 }

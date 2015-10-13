@@ -50,6 +50,8 @@ field_variable  *r_x, *r_y, *r_y,
        *p,
        *phi,
        *omega_x, *omega_y, *omega_z,
+       *acc_x, *acc_y,
+       *div,
        *a_w,*a_e,*a_s,*a_n,*a_t,*a_b,
        *b;
 double dx,dy,dz,dt;
