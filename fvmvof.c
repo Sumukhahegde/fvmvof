@@ -51,10 +51,7 @@ int N_cells = N_cells_x *  N_cells_y;
   allocate_variable(u_z);
   allocate_variable(divergence);
   allocate_variable(acc_y);
- 
-
-  u_x->bc_val[YMAX] = 1.0;
-
+double * temp = malloc(N_cells*sizeof(double));
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
@@ -67,20 +64,41 @@ int N_cells = N_cells_x *  N_cells_y;
     u_x->val[i] = 0.0;
     u_y->val[i] = 0.0;
     u_z->val[i] = 0.0;
+    temp[i] = 0.0;
   }
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
     u_x->bc_val[i] = 0.0;
     u_y->bc_val[i] = 0.0;
   }
-  u_x->bc_val[YMAX] = 1.0;
+  u_y->bc_val[YMAX] = 1.0;
+
   set_ghosts();
+  for(i=0;i<N_cells;i++){
+      l= i%N_cells_x;
+      m =(int) i/N_cells_x;
+    p->val[i] = 0.0;
+    u_x->val[i] = 1.0;
+    u_y->val[i] = 1.0;
+    u_z->val[i] = 0.0;
+    phi->val[i] = 0.0;
+    phi->bc[i] = NONE;
+    if(l>10 && m >10 && l<20 && m<20)
+      phi->val[i] = 10.0;
+  }
+  
   set_bc(p); set_bc(u_x);
   set_bc(u_y);
   set_bc(u_z);
-  dt = 0.01;
+  dt = 0.0001;
     //advection
- // advection();
+    int qq;
+    for(qq = 0;  qq<5000 ; qq++){
+      advection(phi, u_x, u_y, u_z, temp );
+      for( i=0;i<N_cells;i++){
+        phi->val[i] = phi->val[i] - dt*temp[i];
+      }
+    }
   /*
   // only for poisson ;  
   b = malloc(N_cells*sizeof(double));
@@ -292,6 +310,12 @@ static void write_vtk()
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
       fprintf(fp,"%2.8lf\n",p->val[l*N_cells_x + m]);
+    }
+  }
+  fprintf(fp,"SCALARS phi double 1\n LOOKUP_TABLE default\n");  
+  for( l = 0; l<N_cells_y ; l ++){
+    for(m = 0; m<N_cells_x; m++){
+      fprintf(fp,"%2.8lf\n",phi->val[l*N_cells_x + m]);
     }
   }
   fprintf(fp,"SCALARS boundary int 1\n LOOKUP_TABLE default\n");  

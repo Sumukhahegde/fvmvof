@@ -57,7 +57,8 @@ field_variable  *r_x, *r_y, *r_y,
 double dx,dy,dz,dt;
 double mu, CFL, p_ref, rho_ref, u_ref;
 /* Declare Functions */
-void advection(void);
+void advection(field_variable * ,field_variable * ,field_variable * ,
+    field_variable * ,double* );
 void set_ghosts(void);
 void set_bc(field_variable * phi);
 
