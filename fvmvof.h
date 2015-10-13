@@ -51,10 +51,16 @@ field_variable  *r_x, *r_y, *r_y,
        *phi,
        *omega_x, *omega_y, *omega_z,
        *acc_x, *acc_y,
-       *div,
+       *divergence,
        *a_w,*a_e,*a_s,*a_n,*a_t,*a_b,
        *b;
 double dx,dy,dz,dt;
 double mu, CFL, p_ref, rho_ref, u_ref;
+/* Declare Functions */
+void advection(void);
+void set_ghosts(void);
+void set_bc(field_variable * phi);
+
+
 
 #endif

@@ -11,9 +11,9 @@
 
 void Compute_AX(double * );
 int solve_BiCGSTAB(void);
-void write_vtk(void);
-void set_ghosts(void);
-void set_bc(double * var , BC_type * bc, double * bc_value);
+static void write_vtk(void);
+//void set_ghosts(void);
+//void set_bc(double * var , BC_type * bc, double * bc_value);
 
 void allocate_variable(field_variable * phi);
 int main(int argc, char *argv[])
@@ -25,9 +25,10 @@ int main(int argc, char *argv[])
   phi   = malloc(sizeof(field_variable));
   u_x = malloc(sizeof(field_variable));
   u_y = malloc(sizeof(field_variable));
+  u_z = malloc(sizeof(field_variable));
   acc_x = malloc(sizeof(field_variable));
   acc_y = malloc(sizeof(field_variable));
-  div = malloc(sizeof(field_variable));
+  divergence = malloc(sizeof(field_variable));
   // cell dimensions of each field variable
   p->N_x = 50+2; p->N_y = 100+2; p->N_z = 1;
   phi->N_x = 50+2; phi->N_y = 100+2; phi->N_z = 1;
@@ -35,16 +36,20 @@ int main(int argc, char *argv[])
   u_y->N_x = 50+2; u_y->N_y = 100+2; u_y->N_z = 1;
   acc_x->N_x = 50+2; acc_x->N_y = 100+2; acc_x->N_z = 1;
   acc_y->N_x = 50+2; acc_y->N_y = 100+2; acc_y->N_z = 1;
-  div->N_x = 50+2; div->N_y = 100+2; div->N_z = 1;
+  divergence->N_x = 50+2; divergence->N_y = 100+2; divergence->N_z = 1;
 //  u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
 //  u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
-
+int N_cells_x = p->N_x;
+int N_cells_y = p->N_y;
+int N_cells_z = p->N_z;
+int N_cells = N_cells_x *  N_cells_y;
   allocate_variable(p);
   allocate_variable(phi);
   allocate_variable(u_x);
   allocate_variable(acc_x);
   allocate_variable(u_y);
-  allocate_variable(div);
+  allocate_variable(u_z);
+  allocate_variable(divergence);
   allocate_variable(acc_y);
  
 
@@ -53,27 +58,29 @@ int main(int argc, char *argv[])
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
-  
+  int i , l, m; 
   //initial velocity field for advection
   for(i=0;i<N_cells;i++){
       l= i%N_cells_x;
       m =(int) i/N_cells_x;
-    p[i] = 0.0;
-    u_x[i] = 0.0;
-  //  if(l==0)
-//      u_x[i] = 1.0;
-    u_y[i] = 0.0;
-    u_z[i] = 0.0;
-  if
+    p->val[i] = 0.0;
+    u_x->val[i] = 0.0;
+    u_y->val[i] = 0.0;
+    u_z->val[i] = 0.0;
   }
+  for(i=0;i<8;i++){
+    p->bc_val[i] = 0.0;
+    u_x->bc_val[i] = 0.0;
+    u_y->bc_val[i] = 0.0;
+  }
+  u_x->bc_val[YMAX] = 1.0;
   set_ghosts();
-  set_bc(p, p->bc, p->bc_val);
-  set_bc(u_x, u_x->bc, u_x->bc_val);
-  set_bc(u_y, u_y->bc, u_y->bc_val);
-  set_bc(u_z, u_z->bc, u_z->bc_val);
- dt = 0.01;
+  set_bc(p); set_bc(u_x);
+  set_bc(u_y);
+  set_bc(u_z);
+  dt = 0.01;
     //advection
-advection_2d();
+ // advection();
   /*
   // only for poisson ;  
   b = malloc(N_cells*sizeof(double));
@@ -98,8 +105,8 @@ advection_2d();
   set_bc(u_y, u_y_bc, u_y_bc_val);
   set_bc(u_z, u_z_bc, u_z_bc_val);
   //Solve convection, get u star 
-  int test  = solve_BiCGSTAB();
-  write_vtk(); */
+  int test  = solve_BiCGSTAB();*/
+  write_vtk(); 
   return 0;
 }
 /*
@@ -253,16 +260,20 @@ void Compute_AX(double * Temp){
   }
   return;
 }
-
-void write_vtk()
+*/
+static void write_vtk()
 {
   char filename[30]; 
   sprintf(filename, "output.vtk");
   FILE *fp = fopen(filename, "w");
 
-  int Nx = N_cells_x+1;
-  int Ny = N_cells_y+1;
+  int Nx = p->N_x+1;
+  int Ny = p->N_y+1;
   int Nz = 2; //N_cells_z+1;
+  int N_cells_y = p->N_y;
+  int N_cells_x = p->N_x;
+  int N_cells_z = p->N_z;
+  int N_cells = N_cells_x * N_cells_y;
   fprintf(fp,"# vtk DataFile Version 3.0\n");     
   fprintf(fp,"particle point data\n");           
   fprintf(fp,"ASCII\n");                         
@@ -271,69 +282,35 @@ void write_vtk()
   fprintf(fp,"POINTS %d double\n",Nx*Ny*Nz);
   int l,m,n, i;
   for(n = 0; n<Nz; n++){
-  for(m = 0; m<Ny; m++){
-    for( l = 0; l<Nx ; l ++){
-      fprintf(fp,"%2.8lf %2.8lf %2.8lf\n",l*dx , m*dy, n*1.0);
+    for(m = 0; m<Ny; m++){
+      for( l = 0; l<Nx ; l ++){
+        fprintf(fp,"%2.8lf %2.8lf %2.8lf\n",l*dx , m*dy, n*1.0);
+      }
     }
-  }
   }
   fprintf(fp,"CELL_DATA %d\n SCALARS pressure double 1\n LOOKUP_TABLE default\n",N_cells);  
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
-      fprintf(fp,"%2.8lf\n",p[l*N_cells_x + m]);
+      fprintf(fp,"%2.8lf\n",p->val[l*N_cells_x + m]);
     }
   }
   fprintf(fp,"SCALARS boundary int 1\n LOOKUP_TABLE default\n");  
-    for( l = 0; l<N_cells_y ; l ++){
-  for(m = 0; m<N_cells_x; m++){
-      fprintf(fp,"%d\n",bc[l*N_cells_x + m]);
+  for( l = 0; l<N_cells_y ; l ++){
+    for(m = 0; m<N_cells_x; m++){
+      fprintf(fp,"%d\n",p->bc[l*N_cells_x + m]);
     }
   }
-//  fprintf(fp,"%2.8lf %2.8lf %2.8lf\n", x.x, x.y, x.z);
-
-
- return;
-}*/
-
-void set_ghosts()
-{
-  int i,l,m;
-  for(i=0;i<N_cells;i++){
-    l = i%N_cells_x;
-    m = (int) i/N_cells_x;
-    if(l==0 || l == N_cells_x-1 || m == 0|| m == N_cells_y-1 ){
-      //bc[i]=AMBIENT;
-      p_bc[i]   = NEUMANN; 
-      u_x_bc[i] = DIRICHLET; 
-      u_y_bc[i] = DIRICHLET; 
-    }else{
-      //bc[i] = NONE;
-      p_bc[i]   = NONE; 
-      u_x_bc[i] = NONE; 
-      u_y_bc[i] = NONE; 
-      //
-      //   if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
-      //   bc[i]=WALL;
-      //   
+  fprintf(fp,"VECTORS velocity double \n");  
+  for( l = 0; l<u_x->N_y ; l ++){
+    for(m = 0; m<u_x->N_x; m++){
+      fprintf(fp,"%2.8lf %2.8lf %2.8lf \n",u_x->val[l*u_x->N_x + m], u_y->val[l*u_y->N_x + m], 0.0 );
     }
   }
+  //  fprintf(fp,"%2.8lf %2.8lf %2.8lf\n", x.x, x.y, x.z);
   return;
 }
-void set_bc(double * var , BC_type * bc, double * bc_value)
-{
-  int i;
-  for(i=0;i<N_cells;i++){
-    int l = i%N_cells_x, m = (int) i/N_cells_x, n=0;
-    if(bc[i] == DIRICHLET){
-      if(l==0)                var[i] = bc_value[XMIN];
-      else if(l==N_cells_x-1) var[i] = bc_value[XMAX];
-      else if(m==0)           var[i] = bc_value[YMIN];
-      else if(m==N_cells_y-1) var[i] = bc_value[YMAX];
-      else                    var[i] = bc_value[SOLID];
-    }
-  }
-  return;
-}
+
+
 
 void allocate_variable(field_variable * phi)
 {
@@ -342,7 +319,9 @@ void allocate_variable(field_variable * phi)
   phi->bc = malloc(phi->N * sizeof(BC_type));
   return ;
 }
+/*
 void advection_2d(void )
 {
 
 }
+*/
