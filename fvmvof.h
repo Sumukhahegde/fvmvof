@@ -49,6 +49,7 @@ field_variable  *r_x, *r_y, *r_y,
        *rho,
        *p,
        *phi,
+       *temp,
        *omega_x, *omega_y, *omega_z,
        *acc_x, *acc_y,
        *divergence,
@@ -58,8 +59,8 @@ double dx,dy,dz,dt;
 double mu, CFL, p_ref, rho_ref, u_ref;
 /* Declare Functions */
 void advection(field_variable * ,field_variable * ,field_variable * ,
-    field_variable * ,double* );
-void diffusion(field_variable * ,double ,double* );
+    field_variable * ,field_variable * );
+void diffusion(field_variable * ,double ,field_variable * );
 
 void set_ghosts(void);
 void set_bc(field_variable * phi);

@@ -6,14 +6,14 @@
 #include "fvmvof.h"
 
 void diffusion( field_variable * phi, double nu,
-    double * tmp
+    field_variable * tmp
     )
 {
 
   int i, l, m;
-  int N = u_x->N;
-  int N_x = u_x->N_x;
-  int N_y = u_x->N_y;
+  int N = phi->N;
+  int N_x = phi->N_x;
+//  int N_y = phi->N_y;
 
   double phi_s, phi_n , phi_e, phi_w;
 
@@ -48,9 +48,9 @@ void diffusion( field_variable * phi, double nu,
       if(phi->bc[south] != NONE )
         phi_s = 2.0*(phi->val[south]*abs(2-phi->bc[south]) + phi->val[i]*abs(1-phi->bc[south])) - phi->val[i];
 
-     tmp[i] += nu* ((phi_e+phi_w-2.0*phi->val[i])*dy/dx + (phi_n+phi_s-2.0*phi->val[i])*dx/dy) ;
+     tmp->val[i] += nu* ((phi_e+phi_w-2.0*phi->val[i])*dy/dx + (phi_n+phi_s-2.0*phi->val[i])*dx/dy) ;
     } else 
-      tmp[i] = 0.0;
+      tmp->val[i] = 0.0;
 
   }
 

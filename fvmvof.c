@@ -5,77 +5,42 @@
 #include<stdbool.h>
 #include "fvmvof.h"
 
-/* Finite Volume Method */
-/* Code to solve NS. First step, solve poisson equation in 2D */
-/* Define variables */
-
 void Compute_AX(double * );
 int solve_BiCGSTAB(void);
 static void write_vtk(int);
-//void set_ghosts(void);
-//void set_bc(double * var , BC_type * bc, double * bc_value);
+static void allocate_field(field_variable * phi, int, int, int);
 
-void allocate_variable(field_variable * phi);
 int main(int argc, char *argv[])
 {
   double l_x = 1.0;
   double l_y = 1.0;
-
-  p   = malloc(sizeof(field_variable));
-  phi   = malloc(sizeof(field_variable));
-  u_x = malloc(sizeof(field_variable));
-  u_y = malloc(sizeof(field_variable));
-  u_z = malloc(sizeof(field_variable));
-  acc_x = malloc(sizeof(field_variable));
-  acc_y = malloc(sizeof(field_variable));
-  divergence = malloc(sizeof(field_variable));
-  // cell dimensions of each field variable
-  int N_x = 250+2, N_y = 500+2;
-  p->N_x = N_x; p->N_y = N_y; p->N_z = 1;
-  phi->N_x = N_x; phi->N_y = N_y; phi->N_z = 1;
-  u_x->N_x = N_x; u_x->N_y = N_y; u_x->N_z = 1;
-  u_y->N_x = N_x; u_y->N_y = N_y; u_y->N_z = 1;
-  acc_x->N_x = N_x; acc_x->N_y = N_y; acc_x->N_z = 1;
-  acc_y->N_x = N_x; acc_y->N_y = N_y; acc_y->N_z = 1;
-  divergence->N_x = N_x; divergence->N_y = N_y; divergence->N_z = 1;
-//  u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
-//  u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
-int N_cells_x = p->N_x;
-int N_cells_y = p->N_y;
-int N_cells_z = p->N_z;
-int N_cells = N_cells_x *  N_cells_y;
-  allocate_variable(p);
-  allocate_variable(phi);
-  allocate_variable(u_x);
-  allocate_variable(acc_x);
-  allocate_variable(u_y);
-  allocate_variable(u_z);
-  allocate_variable(divergence);
-  allocate_variable(acc_y);
-double * temp = malloc(N_cells*sizeof(double));
+  int N_cells_x = 250+2, N_cells_y = 500+2, N_cells_z = 1;
+  int N_cells = N_cells_x *  N_cells_y * N_cells_z;
+  
   dx = l_x / (N_cells_x-2);
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
-  int i , l, m; 
+  
+  allocate_field(p, N_cells_x, N_cells_y, N_cells_z);
+  allocate_field(phi, N_cells_x, N_cells_y, N_cells_z);
+  allocate_field(u_x, N_cells_x, N_cells_y, N_cells_z);
+  allocate_field(u_y, N_cells_x, N_cells_y, N_cells_z);
+  allocate_field(u_z, N_cells_x, N_cells_y, N_cells_z);
+  allocate_field(divergence, N_cells_x, N_cells_y, N_cells_z);
+//  field_variable * temp;
+  allocate_field(temp, N_cells_x, N_cells_y, N_cells_z);
+  
+  int i, l, m; 
   //initial velocity field for advection
-  for(i=0;i<N_cells;i++){
-      l= i%N_cells_x;
-      m =(int) i/N_cells_x;
-    p->val[i] = 0.0;
-    u_x->val[i] = 0.0;
-    u_y->val[i] = 0.0;
-    u_z->val[i] = 0.0;
-    temp[i] = 0.0;
-  }
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
     phi->bc_val[i] = 0.0;
     u_x->bc_val[i] = 0.0;
     u_y->bc_val[i] = 0.0;
+    temp->bc_val[i] = 0.0;
   }
-//  u_y->bc_val[YMAX] = 1.0;
-
   set_ghosts();
+  //initialization 
   for(i=0;i<N_cells;i++){
       l= i%N_cells_x;
       m =(int) i/N_cells_x;
@@ -84,7 +49,7 @@ double * temp = malloc(N_cells*sizeof(double));
     u_y->val[i] = 1.0;
     u_z->val[i] = 0.0;
     phi->val[i] = 0.0;
-//    phi->bc[i] = NONE;
+    temp->val[i] = 0.0;
     if(l>10 && m >20 && l<50 && m<100)
       phi->val[i] = 10.0;
   }
@@ -92,6 +57,8 @@ double * temp = malloc(N_cells*sizeof(double));
   set_bc(phi); set_bc(u_x);
   set_bc(u_y);
   set_bc(u_z);
+  set_bc(p);
+  
   dt = 0.0001;
   double nu = 0.005;
 
@@ -108,13 +75,13 @@ double * temp = malloc(N_cells*sizeof(double));
   int qq;
   for(qq = 0;  qq<1000 ; qq++){
     for(i=0;i<N_cells;i++)
-      temp[i] = 0.0;
+      temp->val[i] = 0.0;
     advection(phi, u_x, u_y, u_z, temp );
     diffusion(phi, nu, temp);
     for( i=0;i<N_cells;i++){
-      phi->val[i] = phi->val[i] + dt*temp[i]/(dx*dy);
+      phi->val[i] = phi->val[i] + dt*temp->val[i]/(dx*dy);
     }
- set_bc(phi);
+    set_bc(phi);
     if(qq%10 == 0)  write_vtk(qq); 
   }
   /*
@@ -308,14 +275,14 @@ static void write_vtk(int q)
   int N_cells_y = p->N_y;
   int N_cells_x = p->N_x;
   int N_cells_z = p->N_z;
-  int N_cells = N_cells_x * N_cells_y;
+  int N_cells = N_cells_x * N_cells_y * N_cells_z;
   fprintf(fp,"# vtk DataFile Version 3.0\n");     
   fprintf(fp,"particle point data\n");           
   fprintf(fp,"ASCII\n");                         
   fprintf(fp,"DATASET STRUCTURED_GRID\n");       
   fprintf(fp,"DIMENSIONS %d %d %d\n",Nx,Ny,Nz);  
   fprintf(fp,"POINTS %d double\n",Nx*Ny*Nz);
-  int l,m,n, i;
+  int l,m,n;
   for(n = 0; n<Nz; n++){
     for(m = 0; m<Ny; m++){
       for( l = 0; l<Nx ; l ++){
@@ -351,18 +318,15 @@ static void write_vtk(int q)
   return;
 }
 
-
-
-void allocate_variable(field_variable * phi)
+void allocate_field(field_variable * phi, int N_x, int  N_y, int N_z)
 {
-  phi->N = p->N_x * p->N_y * p->N_z;
+  phi->grid = CENTERED;
+  phi      = malloc(sizeof(field_variable));
+  phi->N_x = N_x;
+  phi->N_y = N_y;
+  phi->N_z = N_z;
+  phi->N   = N_x*N_y*N_z;
   phi->val = malloc(phi->N * sizeof(double));
-  phi->bc = malloc(phi->N * sizeof(BC_type));
+  phi->bc  = malloc(phi->N * sizeof(BC_type));
   return ;
 }
-/*
-void advection_2d(void )
-{
-
-}
-*/

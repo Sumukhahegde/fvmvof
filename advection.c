@@ -7,16 +7,15 @@
 
 void advection( field_variable * phi, field_variable * u_x, 
     field_variable * u_y, field_variable * u_z,
-    double * tmp
+    field_variable * tmp
     )
 {
 
   int i, l, m;
-  int N = u_x->N;
-  int N_x = u_x->N_x;
-  int N_y = u_x->N_y;
+  int N = phi->N;
+  int N_x = phi->N_x;
+  //int N_y = u_x->N_y;
 
-  double adv_x, adv_y;
   double u_x_e, u_x_w; //u_x_s, u_x_n, 
   double u_y_s, u_y_n; // u_y_e, u_y_w;
   double phi_s, phi_n , phi_e, phi_w;
@@ -70,12 +69,12 @@ void advection( field_variable * phi, field_variable * u_x,
   //    tmp[i] =(u_x_w*(phi->val[i] - phi_w)/dx + u_y_s*(phi->val[i] -phi_s)/dy);
      //tmp[i] =0.5* ((phi_e*u_x_e - phi_w*u_x_w)*dy +(phi_n*u_y_n -phi_s*u_y_s)*dx);
    //  tmp[i] = ((phi->val[i]*u_x_e - phi_w*u_x_w)*dy +(phi->val[i]*u_y_n -phi_s*u_y_s)*dx);
-     tmp[i] += - 0.5* ((phi_e*u_x_e - phi_w*u_x_w)*dy +(phi_n*u_y_n -phi_s*u_y_s)*dx);
+     tmp->val[i] += - 0.5* ((phi_e*u_x_e - phi_w*u_x_w)*dy +(phi_n*u_y_n -phi_s*u_y_s)*dx);
 //      tmp[i] =0.5* (u_x->val[i]*(phi_e - phi_w)/dx +u_y->val[i]*(phi_n -phi_s)/dy);
        
       // must be plus equal to 
     } else 
-      tmp[i] = 0.0;
+      tmp->val[i] = 0.0;
 
   }
 

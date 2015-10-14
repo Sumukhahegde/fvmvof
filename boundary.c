@@ -42,7 +42,7 @@ int N_cells = p->N_x * p->N_y;
 int N_cells_x = p->N_x;
 int N_cells_y = p->N_y;
   for(i=0;i<N_cells;i++){                                                       
-    int l = i%N_cells_x, m = (int) i/N_cells_x, n=0; // x,y coordinates of cell 
+    int l = i%N_cells_x, m = (int) i/N_cells_x; // x,y coordinates of cell 
     if(phi->bc[i] == DIRICHLET){                                                     
       if(l==0)                phi->val[i] = phi->bc_val[XMIN];                
       else if(l==N_cells_x-1) phi->val[i] = phi->bc_val[XMAX];                
