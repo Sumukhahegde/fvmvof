@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
       phi->val[i] = phi->val[i] + constant.dt*temp->val[i]/(constant.dx*constant.dy);
     }
     set_bc(phi);
-    if(qq%10 == 0)  write_vtk(qq, domain, constant); 
+  //  if(qq%10 == 0)  write_vtk(qq, domain, constant); 
   }
   /*
   // only for poisson ;  
