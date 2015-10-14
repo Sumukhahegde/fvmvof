@@ -22,26 +22,29 @@ int main(int argc, char *argv[])
   constant.dx = l_x / (N_cells_x-2);
   constant.dy = l_y / (N_cells_y-2);
   constant.dz = 1.0;
-  constant.dt = 0.0001;
-  constant.nu = 0.005;
+  constant.dt = 0.001;
+  constant.nu = 0.01;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
-  Field * phi = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+//  Field * phi = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_y = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_z = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * div = allocate_field( N_cells_x, N_cells_y, N_cells_z);
-  Field * temp = allocate_field(N_cells_x, N_cells_y, N_cells_z);
+  Field * temp_x = allocate_field(N_cells_x, N_cells_y, N_cells_z);
+  Field * temp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
   int i, l, m; 
   //initial velocity field for advection
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
-    phi->bc_val[i] = 0.0;
+ //   phi->bc_val[i] = 0.0;
     u_x->bc_val[i] = 0.0;
     u_y->bc_val[i] = 0.0;
-    temp->bc_val[i] = 0.0;
+    temp_x->bc_val[i] = 0.0;
+    temp_x->bc_val[i] = 0.0;
   }
+  u_x->bc_val[YMAX] = 1.0;
   domain.p = p; domain.u_x = u_x; domain.u_y = u_y; 
   domain.u_z = u_z; domain.phi = phi;
   set_ghosts(domain);
@@ -50,42 +53,50 @@ int main(int argc, char *argv[])
       l= i%N_cells_x;
       m =(int) i/N_cells_x;
     p->val[i] = 0.0;
-    u_x->val[i] = 1.0;
-    u_y->val[i] = 1.0;
+    u_x->val[i] = 0.0;
+    u_y->val[i] = 0.0;
     u_z->val[i] = 0.0;
-    phi->val[i] = 0.0;
-    temp->val[i] = 0.0;
-    if(l>10 && m >20 && l<50 && m<100)
-      phi->val[i] = 10.0;
+  // phi->val[i] = 0.0;
+    temp_x->val[i] = 0.0;
+    temp_y->val[i] = 0.0;
+  //  if(l>10 && m >20 && l<50 && m<100)
+  //    phi->val[i] = 10.0;
   }
   
-  set_bc(phi); set_bc(u_x);
+  //set_bc(phi); 
+  set_bc(u_x);
   set_bc(u_y);
   set_bc(u_z);
-  set_bc(p);
-  
-
+  set_bc(p); 
+/*
   double peclet = 1.0*1.0 *constant.dx/constant.nu;
   if(peclet>=2.0){
     printf("peclet number not less than 2.0 \n");
     exit(1);
-  }
-  if(constant.dt>=0.5*constant.dx/1.0){
+  }*/
+  if(constant.dt>=0.25*constant.dx/1.0){
     printf("t not within CFL criterion \n");
     exit(1);
   }
     //advection
   int qq;
   for(qq = 0;  qq<500 ; qq++){
-    for(i=0;i<N_cells;i++)
-      temp->val[i] = 0.0;
-    advection(phi, u_x, u_y, u_z, temp, constant );
-    diffusion(phi, constant.nu, temp, constant);
-    for( i=0;i<N_cells;i++){
-      phi->val[i] = phi->val[i] + constant.dt*temp->val[i]/(constant.dx*constant.dy);
+    for(i=0;i<N_cells;i++){
+      temp_x->val[i] = 0.0;
+      temp_y->val[i] = 0.0;
     }
+    advection(u_x, u_x, u_y, u_z, temp_x, constant );
+    advection(u_y, u_x, u_y, u_z, temp_y, constant );
+    diffusion(u_x, constant.nu, temp_x, constant);
+    diffusion(u_y, constant.nu, temp_y, constant);
+    for( i=0;i<N_cells;i++){
+      u_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
+      u_y->val[i] = u_y->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
+    }
+    //compute divergence
+  //  divergence(div,u_x,u_y,constant);
     set_bc(phi);
-  //  if(qq%10 == 0)  write_vtk(qq, domain, constant); 
+    //  if(qq%10 == 0)  write_vtk(qq, domain, constant); 
   }
   /*
   // only for poisson ;  
