@@ -15,6 +15,7 @@ typedef enum{
   SOLID
 } PATCH_type;
 PATCH_type patch;
+
 typedef enum{
   CENTERED,
   X_STAGGERED,
@@ -31,6 +32,13 @@ typedef enum{
   DIRICHLET,
   NEUMANN,
 } BC_type;
+
+typedef enum{
+  CENTRAL,
+  MIM,
+  UPWIND,
+  QUICK
+} Discretization_type;
 
 typedef struct _Field Field;
 struct _Field{
@@ -50,27 +58,21 @@ struct _Domain{
   Field * u_z;
   Field * phi;
 };
-/*
-Field  *r_x, *r_y, *r_y,
-       *u_x, *u_y, *u_z,
-       *ust_x, *ust_y, *ust_z,
-       *rho,
-       *p,
-       *phi,
-       *temp,
-       *omega_x, *omega_y, *omega_z,
-       *acc_x, *acc_y,
-       *divergence,
-       *a_w,*a_e,*a_s,*a_n,*a_t,*a_b,
-       *b;
-       */
-double dx,dy,dz,dt;
+
+typedef struct _Constant Constant;
+struct _Constant{
+  double dx, dy, dz;  
+  double dt;
+  double nu;
+  double rho;
+};
+
 double mu, CFL, p_ref, rho_ref, u_ref;
+
 /* Declare Functions */
 void advection(Field * ,Field * ,Field * ,
-    Field * ,Field * );
-void diffusion(Field * ,double ,Field * );
-
+    Field * ,Field *, Constant );
+void diffusion(Field * ,double ,Field *, Constant );
 void set_ghosts(Domain);
 void set_bc(Field * phi);
 

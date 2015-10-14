@@ -7,10 +7,12 @@
 
 void advection( Field * phi, Field * u_x, 
     Field * u_y, Field * u_z,
-    Field * tmp
+    Field * tmp,
+    Constant constant
     )
 {
-
+ 
+  double dx = constant.dx, dy = constant.dy, dz =constant.dz;
   int i, l, m;
   int N = phi->N;
   int N_x = phi->N_x;

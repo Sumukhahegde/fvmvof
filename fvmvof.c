@@ -7,27 +7,30 @@
 
 void Compute_AX(double * );
 int solve_BiCGSTAB(void);
-static void write_vtk(int, Domain);
+static void write_vtk(int, Domain, Constant);
 static Field * allocate_field( int, int, int);
 
 int main(int argc, char *argv[])
 {
   Domain domain;
+  Constant constant;
   double l_x = 1.0;
   double l_y = 1.0;
   int N_cells_x = 250+2, N_cells_y = 500+2, N_cells_z = 1;
   int N_cells = N_cells_x *  N_cells_y * N_cells_z;
   
-  dx = l_x / (N_cells_x-2);
-  dy = l_y / (N_cells_y-2);
-  dz = 1.0;
+  constant.dx = l_x / (N_cells_x-2);
+  constant.dy = l_y / (N_cells_y-2);
+  constant.dz = 1.0;
+  constant.dt = 0.0001;
+  constant.nu = 0.005;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * phi = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_y = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_z = allocate_field( N_cells_x, N_cells_y, N_cells_z);
-  Field * divergence = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * div = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * temp = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
   int i, l, m; 
@@ -61,30 +64,28 @@ int main(int argc, char *argv[])
   set_bc(u_z);
   set_bc(p);
   
-  dt = 0.0001;
-  double nu = 0.005;
 
-  double peclet = 1.0*1.0 *dx/nu;
+  double peclet = 1.0*1.0 *constant.dx/constant.nu;
   if(peclet>=2.0){
     printf("peclet number not less than 2.0 \n");
     exit(1);
   }
-  if(dt>=0.5*dx/1.0){
+  if(constant.dt>=0.5*constant.dx/1.0){
     printf("t not within CFL criterion \n");
     exit(1);
   }
     //advection
   int qq;
-  for(qq = 0;  qq<1000 ; qq++){
+  for(qq = 0;  qq<500 ; qq++){
     for(i=0;i<N_cells;i++)
       temp->val[i] = 0.0;
-    advection(phi, u_x, u_y, u_z, temp );
-    diffusion(phi, nu, temp);
+    advection(phi, u_x, u_y, u_z, temp, constant );
+    diffusion(phi, constant.nu, temp, constant);
     for( i=0;i<N_cells;i++){
-      phi->val[i] = phi->val[i] + dt*temp->val[i]/(dx*dy);
+      phi->val[i] = phi->val[i] + constant.dt*temp->val[i]/(constant.dx*constant.dy);
     }
     set_bc(phi);
-    if(qq%10 == 0)  write_vtk(qq, domain); 
+    if(qq%10 == 0)  write_vtk(qq, domain, constant); 
   }
   /*
   // only for poisson ;  
@@ -265,7 +266,7 @@ void Compute_AX(double * Temp){
   return;
 }
 */
-static void write_vtk(int q, Domain domain)
+static void write_vtk(int q, Domain domain, Constant constant)
 {
   char filename[30]; 
   sprintf(filename, "output_%05d.vtk",q);
@@ -288,7 +289,7 @@ static void write_vtk(int q, Domain domain)
   for(n = 0; n<Nz; n++){
     for(m = 0; m<Ny; m++){
       for( l = 0; l<Nx ; l ++){
-        fprintf(fp,"%2.8lf %2.8lf %2.8lf\n",l*dx , m*dy, n*1.0);
+        fprintf(fp,"%2.8lf %2.8lf %2.8lf\n",l*constant.dx , m*constant.dy, n*1.0);
       }
     }
   }

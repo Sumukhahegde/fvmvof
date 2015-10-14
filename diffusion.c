@@ -6,10 +6,12 @@
 #include "fvmvof.h"
 
 void diffusion( Field * phi, double nu,
-    Field * tmp
+    Field * tmp,
+    Constant constant
     )
 {
 
+  double dx = constant.dx, dy = constant.dy, dz =constant.dz;
   int i, l, m;
   int N = phi->N;
   int N_x = phi->N_x;
