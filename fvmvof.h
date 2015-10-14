@@ -59,6 +59,8 @@ double mu, CFL, p_ref, rho_ref, u_ref;
 /* Declare Functions */
 void advection(field_variable * ,field_variable * ,field_variable * ,
     field_variable * ,double* );
+void diffusion(field_variable * ,double ,double* );
+
 void set_ghosts(void);
 void set_bc(field_variable * phi);
 

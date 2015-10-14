@@ -11,7 +11,7 @@
 
 void Compute_AX(double * );
 int solve_BiCGSTAB(void);
-static void write_vtk(void);
+static void write_vtk(int);
 //void set_ghosts(void);
 //void set_bc(double * var , BC_type * bc, double * bc_value);
 
@@ -30,13 +30,14 @@ int main(int argc, char *argv[])
   acc_y = malloc(sizeof(field_variable));
   divergence = malloc(sizeof(field_variable));
   // cell dimensions of each field variable
-  p->N_x = 50+2; p->N_y = 100+2; p->N_z = 1;
-  phi->N_x = 50+2; phi->N_y = 100+2; phi->N_z = 1;
-  u_x->N_x = 50+2; u_x->N_y = 100+2; u_x->N_z = 1;
-  u_y->N_x = 50+2; u_y->N_y = 100+2; u_y->N_z = 1;
-  acc_x->N_x = 50+2; acc_x->N_y = 100+2; acc_x->N_z = 1;
-  acc_y->N_x = 50+2; acc_y->N_y = 100+2; acc_y->N_z = 1;
-  divergence->N_x = 50+2; divergence->N_y = 100+2; divergence->N_z = 1;
+  int N_x = 250+2, N_y = 500+2;
+  p->N_x = N_x; p->N_y = N_y; p->N_z = 1;
+  phi->N_x = N_x; phi->N_y = N_y; phi->N_z = 1;
+  u_x->N_x = N_x; u_x->N_y = N_y; u_x->N_z = 1;
+  u_y->N_x = N_x; u_y->N_y = N_y; u_y->N_z = 1;
+  acc_x->N_x = N_x; acc_x->N_y = N_y; acc_x->N_z = 1;
+  acc_y->N_x = N_x; acc_y->N_y = N_y; acc_y->N_z = 1;
+  divergence->N_x = N_x; divergence->N_y = N_y; divergence->N_z = 1;
 //  u_x->N_x = (p->N_x -1) ; u_x->N_y =p->N_y; u_x->N_z = p->N_z;
 //  u_y->N_x = p->N_x  ; u_y->N_y =p->N_y-1; u_y->N_z = p->N_z;
 int N_cells_x = p->N_x;
@@ -68,10 +69,11 @@ double * temp = malloc(N_cells*sizeof(double));
   }
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
+    phi->bc_val[i] = 0.0;
     u_x->bc_val[i] = 0.0;
     u_y->bc_val[i] = 0.0;
   }
-  u_y->bc_val[YMAX] = 1.0;
+//  u_y->bc_val[YMAX] = 1.0;
 
   set_ghosts();
   for(i=0;i<N_cells;i++){
@@ -82,23 +84,39 @@ double * temp = malloc(N_cells*sizeof(double));
     u_y->val[i] = 1.0;
     u_z->val[i] = 0.0;
     phi->val[i] = 0.0;
-    phi->bc[i] = NONE;
-    if(l>10 && m >10 && l<20 && m<20)
+//    phi->bc[i] = NONE;
+    if(l>10 && m >20 && l<50 && m<100)
       phi->val[i] = 10.0;
   }
   
-  set_bc(p); set_bc(u_x);
+  set_bc(phi); set_bc(u_x);
   set_bc(u_y);
   set_bc(u_z);
-  dt = 0.001;
+  dt = 0.0001;
+  double nu = 0.005;
+
+  double peclet = 1.0*1.0 *dx/nu;
+  if(peclet>=2.0){
+    printf("peclet number not less than 2.0 \n");
+    exit(1);
+  }
+  if(dt>=0.5*dx/1.0){
+    printf("t not within CFL criterion \n");
+    exit(1);
+  }
     //advection
-    int qq;
-    for(qq = 0;  qq<300 ; qq++){
-      advection(phi, u_x, u_y, u_z, temp );
-      for( i=0;i<N_cells;i++){
-        phi->val[i] = phi->val[i] - dt*temp[i];
-      }
+  int qq;
+  for(qq = 0;  qq<1000 ; qq++){
+    for(i=0;i<N_cells;i++)
+      temp[i] = 0.0;
+    advection(phi, u_x, u_y, u_z, temp );
+    diffusion(phi, nu, temp);
+    for( i=0;i<N_cells;i++){
+      phi->val[i] = phi->val[i] + dt*temp[i]/(dx*dy);
     }
+ set_bc(phi);
+    if(qq%10 == 0)  write_vtk(qq); 
+  }
   /*
   // only for poisson ;  
   b = malloc(N_cells*sizeof(double));
@@ -124,7 +142,6 @@ double * temp = malloc(N_cells*sizeof(double));
   set_bc(u_z, u_z_bc, u_z_bc_val);
   //Solve convection, get u star 
   int test  = solve_BiCGSTAB();*/
-  write_vtk(); 
   return 0;
 }
 /*
@@ -279,10 +296,10 @@ void Compute_AX(double * Temp){
   return;
 }
 */
-static void write_vtk()
+static void write_vtk(int q)
 {
   char filename[30]; 
-  sprintf(filename, "output.vtk");
+  sprintf(filename, "output_%05d.vtk",q);
   FILE *fp = fopen(filename, "w");
 
   int Nx = p->N_x+1;
