@@ -39,15 +39,6 @@ void advection( Field * phi, Field * u_x,
       phi_s = phi->val[south];
       phi_n = phi->val[north];
 
-  /*    if(u_x->bc[east] != NONE )
-        u_x_e = 2.0*(u_x->val[east]*abs(2-u_x->bc[east]) + u_x->val[i]*abs(1-u_x->bc[east])) - u_x->val[i];
-      if(u_x->bc[west] != NONE )
-        u_x_w = 2.0*(u_x->val[west]*abs(2-u_x->bc[west]) + u_x->val[i]*abs(1-u_x->bc[west])) - u_x->val[i];
-      if(u_y->bc[north] != NONE )
-        u_y_n = 2.0*(u_y->val[north]*abs(2-u_y->bc[north]) + u_y->val[i]*abs(1-u_y->bc[north])) - u_y->val[i];
-      if(u_y->bc[south] != NONE )
-        u_y_s = 2.0*(u_y->val[south]*abs(2-u_y->bc[south]) + u_y->val[i]*abs(1-u_y->bc[south])) - u_y->val[i];
-*/
       if(phi->bc[east] != NONE )
         phi_e = 2.0*(phi->val[east]*abs(2-phi->bc[east]) + phi->val[i]*abs(1-phi->bc[east])) - phi->val[i];
       if(phi->bc[west] != NONE )
@@ -65,14 +56,7 @@ void advection( Field * phi, Field * u_x,
       if(u_y->bc[south] != NONE )
         u_y_s = 2.0*(u_y->val[south]*abs(2-u_y->bc[south]) + u_y->val[i]*abs(1-u_y->bc[south])) - u_y->val[i];
 
-//      tmp[i] =( (phi->val[i]*u_x->val[i] - phi_w*u_x_w)/dx +(phi->val[i]*u_y->val[i] -phi_s*u_y_s)/dy);
-      //tmp[i] =(u_x_w*(phi->val[i] - phi_w)/dx + u_y_s*(phi->val[i] -phi_s)/dy);
-//      tmp[i] = dy*(u_x_e +u_x->var[i])*0.5*(6./8. * phi->val[i] + 3./8.*phi_e - 1./8.0 * phi_w) - (u_x_w+u_x->var[i])*0.5*()
-  //    tmp[i] =(u_x_w*(phi->val[i] - phi_w)/dx + u_y_s*(phi->val[i] -phi_s)/dy);
-     //tmp[i] =0.5* ((phi_e*u_x_e - phi_w*u_x_w)*dy +(phi_n*u_y_n -phi_s*u_y_s)*dx);
-   //  tmp[i] = ((phi->val[i]*u_x_e - phi_w*u_x_w)*dy +(phi->val[i]*u_y_n -phi_s*u_y_s)*dx);
      tmp->val[i] += - 0.5* ((phi_e*u_x_e - phi_w*u_x_w)*dy +(phi_n*u_y_n -phi_s*u_y_s)*dx);
-//      tmp[i] =0.5* (u_x->val[i]*(phi_e - phi_w)/dx +u_y->val[i]*(phi_n -phi_s)/dy);
        
       // must be plus equal to 
     } else 
@@ -83,3 +67,10 @@ void advection( Field * phi, Field * u_x,
 //        printf("%lf %lf %lf %lf %lf\n", tmp[12*N_x + 12], phi->val[12*N_x + 12], dy, u_x->val[12*N_x + 12], u_y->val[12*N_x+12]);
 return;
 }
+/*
+m = N_x * mm
+mpl = N_x *(mm+1)
+  m_min = N_x*(mm-1)
+for(l = 0;l<N_x;l++)
+temp[m+ l] = u [ m+ l -1 ] + u [m+l +1] - u [mpl + 1]  
+ Technique for vectorization */
