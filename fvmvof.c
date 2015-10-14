@@ -7,11 +7,12 @@
 
 void Compute_AX(double * );
 int solve_BiCGSTAB(void);
-static void write_vtk(int);
-static void allocate_field(field_variable * phi, int, int, int);
+static void write_vtk(int, Domain);
+static Field * allocate_field( int, int, int);
 
 int main(int argc, char *argv[])
 {
+  Domain domain;
   double l_x = 1.0;
   double l_y = 1.0;
   int N_cells_x = 250+2, N_cells_y = 500+2, N_cells_z = 1;
@@ -21,14 +22,13 @@ int main(int argc, char *argv[])
   dy = l_y / (N_cells_y-2);
   dz = 1.0;
   
-  allocate_field(p, N_cells_x, N_cells_y, N_cells_z);
-  allocate_field(phi, N_cells_x, N_cells_y, N_cells_z);
-  allocate_field(u_x, N_cells_x, N_cells_y, N_cells_z);
-  allocate_field(u_y, N_cells_x, N_cells_y, N_cells_z);
-  allocate_field(u_z, N_cells_x, N_cells_y, N_cells_z);
-  allocate_field(divergence, N_cells_x, N_cells_y, N_cells_z);
-//  field_variable * temp;
-  allocate_field(temp, N_cells_x, N_cells_y, N_cells_z);
+  Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * phi = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * u_y = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * u_z = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * divergence = allocate_field( N_cells_x, N_cells_y, N_cells_z);
+  Field * temp = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
   int i, l, m; 
   //initial velocity field for advection
@@ -39,7 +39,9 @@ int main(int argc, char *argv[])
     u_y->bc_val[i] = 0.0;
     temp->bc_val[i] = 0.0;
   }
-  set_ghosts();
+  domain.p = p; domain.u_x = u_x; domain.u_y = u_y; 
+  domain.u_z = u_z; domain.phi = phi;
+  set_ghosts(domain);
   //initialization 
   for(i=0;i<N_cells;i++){
       l= i%N_cells_x;
@@ -82,7 +84,7 @@ int main(int argc, char *argv[])
       phi->val[i] = phi->val[i] + dt*temp->val[i]/(dx*dy);
     }
     set_bc(phi);
-    if(qq%10 == 0)  write_vtk(qq); 
+    if(qq%10 == 0)  write_vtk(qq, domain); 
   }
   /*
   // only for poisson ;  
@@ -263,18 +265,18 @@ void Compute_AX(double * Temp){
   return;
 }
 */
-static void write_vtk(int q)
+static void write_vtk(int q, Domain domain)
 {
   char filename[30]; 
   sprintf(filename, "output_%05d.vtk",q);
   FILE *fp = fopen(filename, "w");
 
-  int Nx = p->N_x+1;
-  int Ny = p->N_y+1;
+  int Nx = domain.p->N_x+1;
+  int Ny = domain.p->N_y+1;
   int Nz = 2; //N_cells_z+1;
-  int N_cells_y = p->N_y;
-  int N_cells_x = p->N_x;
-  int N_cells_z = p->N_z;
+  int N_cells_y = domain.p->N_y;
+  int N_cells_x = domain.p->N_x;
+  int N_cells_z = domain.p->N_z;
   int N_cells = N_cells_x * N_cells_y * N_cells_z;
   fprintf(fp,"# vtk DataFile Version 3.0\n");     
   fprintf(fp,"particle point data\n");           
@@ -293,40 +295,41 @@ static void write_vtk(int q)
   fprintf(fp,"CELL_DATA %d\n SCALARS pressure double 1\n LOOKUP_TABLE default\n",N_cells);  
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
-      fprintf(fp,"%2.8lf\n",p->val[l*N_cells_x + m]);
+      fprintf(fp,"%2.8lf\n",domain.p->val[l*N_cells_x + m]);
     }
   }
   fprintf(fp,"SCALARS phi double 1\n LOOKUP_TABLE default\n");  
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
-      fprintf(fp,"%2.8lf\n",phi->val[l*N_cells_x + m]);
+      fprintf(fp,"%2.8lf\n",domain.phi->val[l*N_cells_x + m]);
     }
   }
   fprintf(fp,"SCALARS boundary int 1\n LOOKUP_TABLE default\n");  
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
-      fprintf(fp,"%d\n",p->bc[l*N_cells_x + m]);
+      fprintf(fp,"%d\n",domain.p->bc[l*N_cells_x + m]);
     }
   }
   fprintf(fp,"VECTORS velocity double \n");  
-  for( l = 0; l<u_x->N_y ; l ++){
-    for(m = 0; m<u_x->N_x; m++){
-      fprintf(fp,"%2.8lf %2.8lf %2.8lf \n",u_x->val[l*u_x->N_x + m], u_y->val[l*u_y->N_x + m], 0.0 );
+  for( l = 0; l<domain.u_x->N_y ; l ++){
+    for(m = 0; m<domain.u_x->N_x; m++){
+      fprintf(fp,"%2.8lf %2.8lf %2.8lf \n",domain.u_x->val[l*domain.u_x->N_x + m], domain.u_y->val[l*domain.u_y->N_x + m], 0.0 );
     }
   }
   //  fprintf(fp,"%2.8lf %2.8lf %2.8lf\n", x.x, x.y, x.z);
   return;
 }
 
-void allocate_field(field_variable * phi, int N_x, int  N_y, int N_z)
+static Field * allocate_field( int N_x, int  N_y, int N_z)
 {
+  Field * phi;
+  phi      = malloc(sizeof(Field));
   phi->grid = CENTERED;
-  phi      = malloc(sizeof(field_variable));
   phi->N_x = N_x;
   phi->N_y = N_y;
   phi->N_z = N_z;
   phi->N   = N_x*N_y*N_z;
   phi->val = malloc(phi->N * sizeof(double));
   phi->bc  = malloc(phi->N * sizeof(BC_type));
-  return ;
+  return phi;
 }

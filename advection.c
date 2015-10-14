@@ -5,9 +5,9 @@
 #include<stdbool.h>                                                             
 #include "fvmvof.h"
 
-void advection( field_variable * phi, field_variable * u_x, 
-    field_variable * u_y, field_variable * u_z,
-    field_variable * tmp
+void advection( Field * phi, Field * u_x, 
+    Field * u_y, Field * u_z,
+    Field * tmp
     )
 {
 

@@ -5,9 +5,14 @@
 #include<stdbool.h>                                                             
 #include "fvmvof.h"
 
-void set_ghosts()                                                               
+void set_ghosts(Domain domain)                                                         
 {                                                                               
   int i,l,m;
+  Field *p = domain.p;
+  Field *u_x = domain.u_x;
+  Field *u_y = domain.u_y;
+  Field *phi = domain.phi;
+
 int N_cells = p->N_x * p->N_y;
 int N_cells_x = p->N_x;
 int N_cells_y = p->N_y;
@@ -35,12 +40,12 @@ int N_cells_y = p->N_y;
   }                                                                             
   return;                                                                       
 }         
-void set_bc(field_variable * phi )                                              
+void set_bc(Field * phi )                                              
 {                                                                               
   int i;                                                                        
-int N_cells = p->N_x * p->N_y;
-int N_cells_x = p->N_x;
-int N_cells_y = p->N_y;
+int N_cells = phi->N_x * phi->N_y;
+int N_cells_x = phi->N_x;
+int N_cells_y = phi->N_y;
   for(i=0;i<N_cells;i++){                                                       
     int l = i%N_cells_x, m = (int) i/N_cells_x; // x,y coordinates of cell 
     if(phi->bc[i] == DIRICHLET){                                                     

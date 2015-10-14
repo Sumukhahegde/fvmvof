@@ -5,8 +5,8 @@
 #include<stdbool.h>                                                             
 #include "fvmvof.h"
 
-void diffusion( field_variable * phi, double nu,
-    field_variable * tmp
+void diffusion( Field * phi, double nu,
+    Field * tmp
     )
 {
 
