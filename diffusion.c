@@ -71,7 +71,7 @@ void laplacian( Field * phi, Constant constant,
       if(phi->bc[south] != NONE )
         phi_s = 2.0*(phi->val[south]*abs(2-phi->bc[south]) + phi->val[i]*abs(1-phi->bc[south])) - phi->val[i];
 
-     tmp[i] += nu* ((phi_e+phi_w-2.0*phi->val[i])*dy/dx + (phi_n+phi_s-2.0*phi->val[i])*dx/dy) ;
+     tmp[i] =  ((phi_e+phi_w-2.0*phi->val[i])*dy/dx + (phi_n+phi_s-2.0*phi->val[i])*dx/dy) ;
     } else 
       tmp[i] = 0.0;
   }

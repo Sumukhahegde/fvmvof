@@ -79,6 +79,7 @@ void divergence(Field * div, Field * u_x, Field * u_y, Constant constant)
 {
   int i,l,m;
   double dx = constant.dx, dy = constant.dy, dz = constant.dz;
+  double dt = constant.dt;
   int N= div->N;
   int N_x = div->N_x;
 
@@ -103,10 +104,51 @@ void divergence(Field * div, Field * u_x, Field * u_y, Constant constant)
       if(u_y->bc[south] != NONE )                                               
         u_y_s = 2.0*(u_y->val[south]*abs(2-u_y->bc[south]) + u_y->val[i]*abs(1-u_y->bc[south])) - u_y->val[i];
 
-      div->val[i] = 0.5*((u_x_e - u_x_w )*dy  + (u_y_n-u_y_s)*dx);
+      div->val[i] = 0.5*((u_x_e - u_x_w )*dy  + (u_y_n-u_y_s)*dx)/dt;
 
     }else{
       div->val[i] = 0.0;
+
+    }
+
+  }
+  return;
+}
+void gradient(Field * p, Field * temp_x, Field * temp_y, Constant constant)
+{
+  int i,l,m;
+  double dx = constant.dx, dy = constant.dy, dz = constant.dz;
+  double dt = constant.dt;
+  int N= p->N;
+  int N_x = p->N_x;
+
+  double p_e, p_w, p_n, p_s;
+  for(i = 0;i<N;i++){                                                           
+    if(p->bc[i] == NONE ){                                                    
+      l= i%N_x;                                                                 
+      m =(int) i/N_x; 
+      int south = (m-1)*N_x + l, north =(m+1)*N_x + l,                          
+          west =m*N_x + (l-1), east = m*N_x + (l+1);
+      p_e = p->val[east];
+      p_w = p->val[west];
+      p_n = p->val[north];
+      p_s = p->val[south];
+
+      if(p->bc[east] != NONE )                                                
+        p_e = 2.0*(p->val[east]*abs(2-p->bc[east]) + p->val[i]*abs(1-p->bc[east])) - p->val[i];
+      if(p->bc[west] != NONE )                                                
+        p_w = 2.0*(p->val[west]*abs(2-p->bc[west]) + p->val[i]*abs(1-p->bc[west])) - p->val[i];
+      if(p->bc[north] != NONE )                                               
+        p_n = 2.0*(p->val[north]*abs(2-p->bc[north]) + p->val[i]*abs(1-p->bc[north])) - p->val[i];
+      if(p->bc[south] != NONE )                                               
+        p_s = 2.0*(p->val[south]*abs(2-p->bc[south]) + p->val[i]*abs(1-p->bc[south])) - p->val[i];
+
+      temp_x->val[i] = 0.5*(p_e - p_w )*dy  ;
+      temp_y->val[i] =  0.5* (p_n-p_s)*dx;
+
+    }else{
+      temp_x->val[i] = 0.0;
+      temp_y->val[i] = 0.0;
 
     }
 

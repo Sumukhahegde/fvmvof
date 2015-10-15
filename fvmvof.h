@@ -70,8 +70,7 @@ struct _Constant{
 double mu, CFL, p_ref, rho_ref, u_ref;
 
 /* Declare Functions */
-void advection(Field * ,Field * ,Field * ,
-    Field * ,Field *, Constant );
+void advection(Field *, Field *, Field *, Field *, Field *, Constant );
 void diffusion(Field * ,double ,Field *, Constant );
 void set_ghosts(Domain);
 void set_bc(Field * phi);
@@ -80,5 +79,6 @@ void divergence(Field * div, Field * u_x, Field * u_y, Constant constant);
 void laplacian( Field * phi, Constant constant,
     double * tmp
     );
+void gradient(Field * p, Field * temp_x, Field * temp_y, Constant constant);
 
 #endif

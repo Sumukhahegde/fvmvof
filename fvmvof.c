@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
   Constant constant;
   double l_x = 1.0;
   double l_y = 1.0;
-  int N_cells_x = 250+2, N_cells_y = 500+2, N_cells_z = 1;
+  int N_cells_x = 100+2, N_cells_y = 100+2, N_cells_z = 1;
   int N_cells = N_cells_x *  N_cells_y * N_cells_z;
   
   constant.dx = l_x / (N_cells_x-2);
@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
   // phi->val[i] = 0.0;
     temp_x->val[i] = 0.0;
     temp_y->val[i] = 0.0;
+    div->val[i] = 0.0;
   //  if(l>10 && m >20 && l<50 && m<100)
   //    phi->val[i] = 10.0;
   }
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
   }
     //advection
   int qq;
-  for(qq = 0;  qq<500 ; qq++){
+  for(qq = 0;  qq<150000 ; qq++){
     for(i=0;i<N_cells;i++){
       temp_x->val[i] = 0.0;
       temp_y->val[i] = 0.0;
@@ -92,13 +93,23 @@ int main(int argc, char *argv[])
     diffusion(u_y, constant.nu, temp_y, constant);
     for( i=0;i<N_cells;i++){
       u_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
-      u_y->val[i] = u_y->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
+      u_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
     }
+    set_bc(u_x);
+    set_bc(u_y);
     //compute divergence
     divergence(div,u_x,u_y,constant);
     int test  = solve_BiCGSTAB(p, div, constant);
+    gradient(p,temp_x,temp_y, constant);
+    for( i=0;i<N_cells;i++){
+      u_x->val[i] = u_x->val[i] - constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
+      u_y->val[i] = u_y->val[i] - constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
+    }
+
     //set_bc(phi);
-    //  if(qq%10 == 0)  write_vtk(qq, domain, constant); 
+      if(qq%1000 == 0)  write_vtk(qq, domain, constant); 
+ // write_vtk(qq, domain, constant); 
+
   }
   
   return 0;
@@ -129,7 +140,7 @@ int solve_BiCGSTAB(Field *p, Field *div, Constant constant)
 
   // Start BICGSTAB iterations
   // set initial solution vector x_0 = (Uj, Vj) 
-  laplacian(p,constant,Temp) ;
+  laplacian(p, constant,Temp) ;
   //Compute_AX(p, Temp, constant) ;
   // Initial vector r_0 = b - Ax_0, and r0* = r_0
   for(i = 0 ; i < N ; i++) {
@@ -301,12 +312,12 @@ static void write_vtk(int q, Domain domain, Constant constant)
       fprintf(fp,"%2.8lf\n",domain.p->val[l*N_cells_x + m]);
     }
   }
-  fprintf(fp,"SCALARS phi double 1\n LOOKUP_TABLE default\n");  
+/*  fprintf(fp,"SCALARS phi double 1\n LOOKUP_TABLE default\n");  
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
       fprintf(fp,"%2.8lf\n",domain.phi->val[l*N_cells_x + m]);
     }
-  }
+  }*/
   fprintf(fp,"SCALARS boundary int 1\n LOOKUP_TABLE default\n");  
   for( l = 0; l<N_cells_y ; l ++){
     for(m = 0; m<N_cells_x; m++){
