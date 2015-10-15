@@ -5,8 +5,9 @@
 #include<stdbool.h>
 #include "fvmvof.h"
 
-void Compute_AX(double * );
-int solve_BiCGSTAB(void);
+//void Compute_AX(double * );
+//int solve_BiCGSTAB(void);
+int solve_BiCGSTAB(Field *p, Field *div, Constant constant) ;
 static void write_vtk(int, Domain, Constant);
 static Field * allocate_field( int, int, int);
 
@@ -22,7 +23,7 @@ int main(int argc, char *argv[])
   constant.dx = l_x / (N_cells_x-2);
   constant.dy = l_y / (N_cells_y-2);
   constant.dz = 1.0;
-  constant.dt = 0.001;
+  constant.dt = 0.0001;
   constant.nu = 0.01;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
   }
   u_x->bc_val[YMAX] = 1.0;
   domain.p = p; domain.u_x = u_x; domain.u_y = u_y; 
-  domain.u_z = u_z; domain.phi = phi;
+  domain.u_z = u_z; //domain.phi = phi;
   set_ghosts(domain);
   //initialization 
   for(i=0;i<N_cells;i++){
@@ -94,39 +95,16 @@ int main(int argc, char *argv[])
       u_y->val[i] = u_y->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
     }
     //compute divergence
-  //  divergence(div,u_x,u_y,constant);
-    set_bc(phi);
+    divergence(div,u_x,u_y,constant);
+    int test  = solve_BiCGSTAB(p, div, constant);
+    //set_bc(phi);
     //  if(qq%10 == 0)  write_vtk(qq, domain, constant); 
   }
-  /*
-  // only for poisson ;  
-  b = malloc(N_cells*sizeof(double));
-  //initial and boundary conditions
-  int i,l,m;
-  for(i=0;i<N_cells;i++){
-    p[i] = 0.0;
-    u_x[i] = 0.0;
-    u_y[i] = 0.0;
-    u_z[i] = 0.0;
-  }
-  for(i=0;i<8;i++){
-    u_x_bc_val[i] = 0.0;
-    u_y_bc_val[i] = 0.0;
-    u_z_bc_val[i] = 0.0;
-    p_bc_val[i] = 0.0;
-  }
-  u_x_bc_val[4] = 1.0;
-  //set_bc();
-  set_bc(p, p_bc, p_bc_val);
-  set_bc(u_x, u_x_bc, u_x_bc_val);
-  set_bc(u_y, u_y_bc, u_y_bc_val);
-  set_bc(u_z, u_z_bc, u_z_bc_val);
-  //Solve convection, get u star 
-  int test  = solve_BiCGSTAB();*/
+  
   return 0;
 }
-/*
-int solve_BiCGSTAB() 
+
+int solve_BiCGSTAB(Field *p, Field *div, Constant constant) 
 {
   int i, j ;
   double *r0_star, *sj, *rj, *pj, *pstar, *sstar ; 
@@ -135,7 +113,9 @@ int solve_BiCGSTAB()
   double norm, BICGEPS = 1.0E-12; 
   int BICG_ITER ;
   bool STOP = false ;
-  int N =  N_cells;
+  int N =  p->N;
+ 
+  double* b = div->val;
 
   r0_star = malloc(N*sizeof(double));
   sj = malloc(N*sizeof(double));
@@ -149,10 +129,11 @@ int solve_BiCGSTAB()
 
   // Start BICGSTAB iterations
   // set initial solution vector x_0 = (Uj, Vj) 
-  Compute_AX(Temp) ;
+  laplacian(p,constant,Temp) ;
+  //Compute_AX(p, Temp, constant) ;
   // Initial vector r_0 = b - Ax_0, and r0* = r_0
   for(i = 0 ; i < N ; i++) {
-    Uj[i] = p[i] ;
+    Uj[i] = p->val[i] ;
     rj[i] = b[i] - Temp[i] ; 
     r0_star[i] = rj[i] ;
   }
@@ -178,8 +159,8 @@ int solve_BiCGSTAB()
         pstar[i] = pj[i] ;
       // compute vj = A*pstar
       for(i = 0 ; i < N ; i++) 
-        p[i] = pstar[i] ;
-      Compute_AX(Temp) ;
+        p->val[i] = pstar[i] ;
+      laplacian(p,constant,Temp) ;
       for(i = 0 ; i < N ; i++) 
         Var[i] = Temp[i] ;
       H1 = 0.0 ;
@@ -204,8 +185,8 @@ int solve_BiCGSTAB()
       } else {
         // compute t = As
         for(i = 0 ; i < N ; i++) 
-          p[i] = sstar[i] ; 
-        Compute_AX(Temp) ;
+          p->val[i] = sstar[i] ; 
+        laplacian(p,constant,Temp) ;
         H1 = H2 = 0.0 ;
         for(i =0 ; i < N ; i++) {
           H1 += Temp[i]*sj[i] ;
@@ -231,10 +212,21 @@ int solve_BiCGSTAB()
     if(BICG_ITER%100 == 0) printf("%d \t %lf \n", BICG_ITER, norm );
   }while( (BICG_ITER < 10000) && (!STOP) ) ;
   for(i = 0 ; i < N ; i++)
-    p[i] = Uj[i] ;
+    p->val[i] = Uj[i] ;
+  
+  free(r0_star);
+  free(sj);
+  free(rj);
+  free(pj);
+  free(pstar);
+  free(sstar);
+  free(Temp);
+  free(Uj);
+  free(Var);
+
   return 0;
 }
-
+/*
 void Compute_AX(double * Temp){
   int i,l,m;
   double phi_w, phi_e, phi_n, phi_s;
@@ -246,7 +238,6 @@ void Compute_AX(double * Temp){
       m =(int) i/N_cells_x;
       int south = (m-1)*N_cells_x + l, north =(m+1)*N_cells_x + l,
           west =m*N_cells_x + (l-1), east = m*N_cells_x + (l+1);
- //     if(patch[south] != NONE )
         if(p_bc[south] == DIRICHLET)
           phi_s = 2.0*p[south] - p[i];
         else if(p_bc[south] == NEUMANN)

@@ -74,3 +74,42 @@ mpl = N_x *(mm+1)
 for(l = 0;l<N_x;l++)
 temp[m+ l] = u [ m+ l -1 ] + u [m+l +1] - u [mpl + 1]  
  Technique for vectorization */
+
+void divergence(Field * div, Field * u_x, Field * u_y, Constant constant)
+{
+  int i,l,m;
+  double dx = constant.dx, dy = constant.dy, dz = constant.dz;
+  int N= div->N;
+  int N_x = div->N_x;
+
+  double u_x_e, u_x_w, u_y_n, u_y_s;
+  for(i = 0;i<N;i++){                                                           
+    if(u_x->bc[i] == NONE ){                                                    
+      l= i%N_x;                                                                 
+      m =(int) i/N_x; 
+      int south = (m-1)*N_x + l, north =(m+1)*N_x + l,                          
+          west =m*N_x + (l-1), east = m*N_x + (l+1);
+      u_x_e = u_x->val[east];
+      u_x_w = u_x->val[west];
+      u_y_n = u_y->val[north];
+      u_y_s = u_y->val[south];
+
+      if(u_x->bc[east] != NONE )                                                
+        u_x_e = 2.0*(u_x->val[east]*abs(2-u_x->bc[east]) + u_x->val[i]*abs(1-u_x->bc[east])) - u_x->val[i];
+      if(u_x->bc[west] != NONE )                                                
+        u_x_w = 2.0*(u_x->val[west]*abs(2-u_x->bc[west]) + u_x->val[i]*abs(1-u_x->bc[west])) - u_x->val[i];
+      if(u_y->bc[north] != NONE )                                               
+        u_y_n = 2.0*(u_y->val[north]*abs(2-u_y->bc[north]) + u_y->val[i]*abs(1-u_y->bc[north])) - u_y->val[i];
+      if(u_y->bc[south] != NONE )                                               
+        u_y_s = 2.0*(u_y->val[south]*abs(2-u_y->bc[south]) + u_y->val[i]*abs(1-u_y->bc[south])) - u_y->val[i];
+
+      div->val[i] = 0.5*((u_x_e - u_x_w )*dy  + (u_y_n-u_y_s)*dx);
+
+    }else{
+      div->val[i] = 0.0;
+
+    }
+
+  }
+  return;
+}

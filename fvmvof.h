@@ -75,7 +75,10 @@ void advection(Field * ,Field * ,Field * ,
 void diffusion(Field * ,double ,Field *, Constant );
 void set_ghosts(Domain);
 void set_bc(Field * phi);
+void divergence(Field * div, Field * u_x, Field * u_y, Constant constant);
 
-
+void laplacian( Field * phi, Constant constant,
+    double * tmp
+    );
 
 #endif

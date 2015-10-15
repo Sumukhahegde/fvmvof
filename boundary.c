@@ -11,7 +11,8 @@ void set_ghosts(Domain domain)
   Field *p = domain.p;
   Field *u_x = domain.u_x;
   Field *u_y = domain.u_y;
-  Field *phi = domain.phi;
+  Field *u_z = domain.u_z;
+ // Field *phi = domain.phi;
 
 int N_cells = p->N_x * p->N_y;
 int N_cells_x = p->N_x;
@@ -20,18 +21,20 @@ int N_cells_y = p->N_y;
   for(i=0;i<N_cells;i++){         
     l = i%N_cells_x;               
     m = (int) i/N_cells_x;         
-    if(l==0 || l == N_cells_x-1 || 
+    if(l==0 || l == N_cells_x-1 || m==0 || m== N_cells_y-1){ 
       //bc[i]=AMBIENT;             
       p->bc[i]   = NEUMANN;         
       u_x->bc[i] = DIRICHLET;       
       u_y->bc[i] = DIRICHLET;       
+      u_z->bc[i] = DIRICHLET;       
 //      phi->bc[i] = DIRICHLET;       
     }else{                         
       //bc[i] = NONE;              
       p->bc[i]   = NONE;            
-      phi->bc[i]   = NONE;            
+     // phi->bc[i]   = NONE;            
       u_x->bc[i] = NONE;            
       u_y->bc[i] = NONE;            
+      u_z->bc[i] = NONE;            
 //                           
 //   if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
       //   bc[i]=WALL;    
