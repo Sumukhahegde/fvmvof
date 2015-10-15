@@ -7,7 +7,7 @@
 
 //void Compute_AX(double * );
 //int solve_BiCGSTAB(void);
-int solve_BiCGSTAB(Field *p, Field *div, Constant constant) ;
+int solve_BiCGSTAB(Field *p, Field *div, Constant constant,Equation_type) ;
 static void write_vtk(int, Domain, Constant);
 static Field * allocate_field( int, int, int);
 
@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
   Field * div = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * temp_x = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   Field * temp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
+  Field * utemp_x = allocate_field(N_cells_x, N_cells_y, N_cells_z);
+  Field * utemp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
   int i, l, m; 
   //initial velocity field for advection
@@ -89,17 +91,21 @@ int main(int argc, char *argv[])
     }
     advection(u_x, u_x, u_y, u_z, temp_x, constant );
     advection(u_y, u_x, u_y, u_z, temp_y, constant );
-    diffusion(u_x, constant.nu, temp_x, constant);
-    diffusion(u_y, constant.nu, temp_y, constant);
     for( i=0;i<N_cells;i++){
       u_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
+      utemp_x->val[i] = u_x->val[i]
       u_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
+      utemp_y->val[i] = u_y->val[i]
     }
+    //diffusion(u_x, constant.nu, temp_x, constant);
+    //diffusion(u_y, constant.nu, temp_y, constant);
+    int test  = solve_BiCGSTAB(u_x, utemp_x, constant,HELMHOLTZ);
+    int test  = solve_BiCGSTAB(u_y, utemp_y, constant,HELMHOLTZ);
     set_bc(u_x);
     set_bc(u_y);
     //compute divergence
     divergence(div,u_x,u_y,constant);
-    int test  = solve_BiCGSTAB(p, div, constant);
+    int test  = solve_BiCGSTAB(p, div, constant,POISSON);
     gradient(p,temp_x,temp_y, constant);
     for( i=0;i<N_cells;i++){
       u_x->val[i] = u_x->val[i] - constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
@@ -115,7 +121,7 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-int solve_BiCGSTAB(Field *p, Field *div, Constant constant) 
+int solve_BiCGSTAB(Field *p, Field *div, Constant constant,Equation_type eqn) 
 {
   int i, j ;
   double *r0_star, *sj, *rj, *pj, *pstar, *sstar ; 
@@ -140,7 +146,10 @@ int solve_BiCGSTAB(Field *p, Field *div, Constant constant)
 
   // Start BICGSTAB iterations
   // set initial solution vector x_0 = (Uj, Vj) 
-  laplacian(p, constant,Temp) ;
+  if(eqn == POISSON)
+    laplacian(p, constant,Temp) ;
+  else if(eqn == HELMHOLTZ)
+    diffusion_implicit(p,constant, Temp);
   //Compute_AX(p, Temp, constant) ;
   // Initial vector r_0 = b - Ax_0, and r0* = r_0
   for(i = 0 ; i < N ; i++) {
@@ -171,7 +180,11 @@ int solve_BiCGSTAB(Field *p, Field *div, Constant constant)
       // compute vj = A*pstar
       for(i = 0 ; i < N ; i++) 
         p->val[i] = pstar[i] ;
-      laplacian(p,constant,Temp) ;
+      //    laplacian(p,constant,Temp) ;
+      if(eqn == POISSON)
+        laplacian(p, constant,Temp) ;
+      else if(eqn == HELMHOLTZ)
+        diffusion_implicit(p,constant, Temp);
       for(i = 0 ; i < N ; i++) 
         Var[i] = Temp[i] ;
       H1 = 0.0 ;
@@ -197,7 +210,11 @@ int solve_BiCGSTAB(Field *p, Field *div, Constant constant)
         // compute t = As
         for(i = 0 ; i < N ; i++) 
           p->val[i] = sstar[i] ; 
-        laplacian(p,constant,Temp) ;
+        //laplacian(p,constant,Temp) ;
+        if(eqn == POISSON)
+          laplacian(p, constant,Temp) ;
+        else if(eqn == HELMHOLTZ)
+          diffusion_implicit(p,constant, Temp);
         H1 = H2 = 0.0 ;
         for(i =0 ; i < N ; i++) {
           H1 += Temp[i]*sj[i] ;

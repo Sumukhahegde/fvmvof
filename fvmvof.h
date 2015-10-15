@@ -40,6 +40,11 @@ typedef enum{
   QUICK
 } Discretization_type;
 
+typedef enum{
+  POISSON,
+  HELMHOLTZ
+} Equation_type;
+
 typedef struct _Field Field;
 struct _Field{
   data_location grid;  
