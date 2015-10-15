@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
   constant.dx = l_x / (N_cells_x-2);
   constant.dy = l_y / (N_cells_y-2);
   constant.dz = 1.0;
-  constant.dt = 0.0001;
+  constant.dt = 0.001;
   constant.nu = 0.01;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -34,10 +34,8 @@ int main(int argc, char *argv[])
   Field * div = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * temp_x = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   Field * temp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
-  Field * utemp_x = allocate_field(N_cells_x, N_cells_y, N_cells_z);
-  Field * utemp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
-  int i, l, m; 
+  int i,l,m; 
   //initial velocity field for advection
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
@@ -45,7 +43,7 @@ int main(int argc, char *argv[])
     u_x->bc_val[i] = 0.0;
     u_y->bc_val[i] = 0.0;
     temp_x->bc_val[i] = 0.0;
-    temp_x->bc_val[i] = 0.0;
+    temp_y->bc_val[i] = 0.0;
   }
   u_x->bc_val[YMAX] = 1.0;
   domain.p = p; domain.u_x = u_x; domain.u_y = u_y; 
@@ -83,7 +81,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
     //advection
-  int qq;
+  int qq, test;
   for(qq = 0;  qq<150000 ; qq++){
     for(i=0;i<N_cells;i++){
       temp_x->val[i] = 0.0;
@@ -92,20 +90,22 @@ int main(int argc, char *argv[])
     advection(u_x, u_x, u_y, u_z, temp_x, constant );
     advection(u_y, u_x, u_y, u_z, temp_y, constant );
     for( i=0;i<N_cells;i++){
-      u_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
-      utemp_x->val[i] = u_x->val[i]
-      u_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
-      utemp_y->val[i] = u_y->val[i]
+      temp_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
+      temp_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
     }
     //diffusion(u_x, constant.nu, temp_x, constant);
     //diffusion(u_y, constant.nu, temp_y, constant);
-    int test  = solve_BiCGSTAB(u_x, utemp_x, constant,HELMHOLTZ);
-    int test  = solve_BiCGSTAB(u_y, utemp_y, constant,HELMHOLTZ);
-    set_bc(u_x);
-    set_bc(u_y);
+    test  = solve_BiCGSTAB(u_x, temp_x, constant,HELMHOLTZ);
+    test  = solve_BiCGSTAB(u_y, temp_y, constant,HELMHOLTZ);
+/*for(i=0;i<N_cells;i++){
+if(isnan(u_x->val[i])){ printf("nan x \n"); exit(1); } 
+if(isnan(u_y->val[i])){ printf("nan x \n"); exit(1); } 
+}*/
+  //  set_bc(u_x);
+   // set_bc(u_y);
     //compute divergence
     divergence(div,u_x,u_y,constant);
-    int test  = solve_BiCGSTAB(p, div, constant,POISSON);
+    test  = solve_BiCGSTAB(p, div, constant,POISSON);
     gradient(p,temp_x,temp_y, constant);
     for( i=0;i<N_cells;i++){
       u_x->val[i] = u_x->val[i] - constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     }
 
     //set_bc(phi);
-      if(qq%1000 == 0)  write_vtk(qq, domain, constant); 
+      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
  // write_vtk(qq, domain, constant); 
 
   }
@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
 
 int solve_BiCGSTAB(Field *p, Field *div, Constant constant,Equation_type eqn) 
 {
-  int i, j ;
+  int i ;
   double *r0_star, *sj, *rj, *pj, *pstar, *sstar ; 
   double *Temp, *Uj, *Var  ;
-  double rhoj_Minus, alphaj, omegaj, rhoj, betaj, H1, H2 ;
+  double rhoj_Minus=0.0, alphaj=0.0, omegaj =0.0, rhoj, betaj, H1, H2 ;
   double norm, BICGEPS = 1.0E-12; 
   int BICG_ITER ;
   bool STOP = false ;
@@ -145,7 +145,11 @@ int solve_BiCGSTAB(Field *p, Field *div, Constant constant,Equation_type eqn)
   Var = malloc(N*sizeof(double));
 
   // Start BICGSTAB iterations
-  // set initial solution vector x_0 = (Uj, Vj) 
+  // set initial solution vector x_0 = (Uj, Vj)
+  
+  for(i = 0 ; i < N ; i++) {
+Temp[i] = 0.0;
+  }
   if(eqn == POISSON)
     laplacian(p, constant,Temp) ;
   else if(eqn == HELMHOLTZ)

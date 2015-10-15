@@ -23,11 +23,6 @@ typedef enum{
 }data_location;
 
 typedef enum{
-  POISSON,
-  HELMHOLTZ
-}equation_type;
-
-typedef enum{
   NONE,
   DIRICHLET,
   NEUMANN,
@@ -77,6 +72,7 @@ double mu, CFL, p_ref, rho_ref, u_ref;
 /* Declare Functions */
 void advection(Field *, Field *, Field *, Field *, Field *, Constant );
 void diffusion(Field * ,double ,Field *, Constant );
+void diffusion_implicit( Field * phi, Constant constant,double * tmp );
 void set_ghosts(Domain);
 void set_bc(Field * phi);
 void divergence(Field * div, Field * u_x, Field * u_y, Constant constant);
