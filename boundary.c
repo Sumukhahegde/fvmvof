@@ -36,9 +36,13 @@ int N_cells_y = p->N_y;
       u_y->bc[i] = NONE;            
       u_z->bc[i] = NONE;            
 //                           
-//   if(l>N_cells_x/2 -10 && l<N_cells_x/2 +10 && m>N_cells_y/2 -10 && m<N_cells_y/2 +10)
+      if(l>N_cells_x/4  && l<3*N_cells_x/4  && m>N_cells_y/4 && m<3*N_cells_y/4){
+      p->bc[i]   = NEUMANN;              
+      u_x->bc[i] = DIRICHLET;            
+      u_y->bc[i] = DIRICHLET;            
+      u_z->bc[i] = DIRICHLET;            
       //   bc[i]=WALL;    
-      //                                                         
+   }                                                        
     }                                                            
   }                                                              
   return;                                                        

@@ -23,11 +23,10 @@ int main(int argc, char *argv[])
   constant.dx = l_x / (N_cells_x-2);
   constant.dy = l_y / (N_cells_y-2);
   constant.dz = 1.0;
-  constant.dt = 0.001;
+  constant.dt = 0.002;
   constant.nu = 0.01;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
-//  Field * phi = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_y = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_z = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -36,19 +35,19 @@ int main(int argc, char *argv[])
   Field * temp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
   int i,l,m; 
-  //initial velocity field for advection
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
- //   phi->bc_val[i] = 0.0;
     u_x->bc_val[i] = 0.0;
     u_y->bc_val[i] = 0.0;
     temp_x->bc_val[i] = 0.0;
     temp_y->bc_val[i] = 0.0;
   }
   u_x->bc_val[YMAX] = 1.0;
+ // u_x->bc_val[YMIN] = 1.0;
   domain.p = p; domain.u_x = u_x; domain.u_y = u_y; 
   domain.u_z = u_z; //domain.phi = phi;
   set_ghosts(domain);
+
   //initialization 
   for(i=0;i<N_cells;i++){
       l= i%N_cells_x;
