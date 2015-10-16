@@ -20,11 +20,8 @@ int main(int argc, char *argv[])
   int N_cells_x = 100+2, N_cells_y = 100+2, N_cells_z = 1;
   int N_cells = N_cells_x *  N_cells_y * N_cells_z;
   
-  constant.dx = l_x / (N_cells_x-2);
-  constant.dy = l_y / (N_cells_y-2);
-  constant.dz = 1.0;
-  constant.dt = 0.002;
-  constant.nu = 0.01;
+  constant.dx = l_x / (N_cells_x-2); constant.dy = l_y / (N_cells_y-2);
+  constant.dz = 1.0; constant.dt = 0.002; constant.nu = 0.01;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -35,6 +32,7 @@ int main(int argc, char *argv[])
   Field * temp_y = allocate_field(N_cells_x, N_cells_y, N_cells_z);
   
   int i,l,m; 
+  
   for(i=0;i<8;i++){
     p->bc_val[i] = 0.0;
     u_x->bc_val[i] = 0.0;
@@ -43,9 +41,8 @@ int main(int argc, char *argv[])
     temp_y->bc_val[i] = 0.0;
   }
   u_x->bc_val[YMAX] = 1.0;
- // u_x->bc_val[YMIN] = 1.0;
   domain.p = p; domain.u_x = u_x; domain.u_y = u_y; 
-  domain.u_z = u_z; //domain.phi = phi;
+  domain.u_z = u_z; 
   set_ghosts(domain);
 
   //initialization 
@@ -56,15 +53,11 @@ int main(int argc, char *argv[])
     u_x->val[i] = 0.0;
     u_y->val[i] = 0.0;
     u_z->val[i] = 0.0;
-  // phi->val[i] = 0.0;
     temp_x->val[i] = 0.0;
     temp_y->val[i] = 0.0;
     div->val[i] = 0.0;
-  //  if(l>10 && m >20 && l<50 && m<100)
-  //    phi->val[i] = 10.0;
   }
   
-  //set_bc(phi); 
   set_bc(u_x);
   set_bc(u_y);
   set_bc(u_z);
@@ -81,7 +74,7 @@ int main(int argc, char *argv[])
   }
     //advection
   int qq, test;
-  for(qq = 0;  qq<150000 ; qq++){
+  for(qq = 0;  qq<100 ; qq++){
     for(i=0;i<N_cells;i++){
       temp_x->val[i] = 0.0;
       temp_y->val[i] = 0.0;
@@ -92,17 +85,8 @@ int main(int argc, char *argv[])
       temp_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
       temp_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
     }
-    //diffusion(u_x, constant.nu, temp_x, constant);
-    //diffusion(u_y, constant.nu, temp_y, constant);
     test  = solve_BiCGSTAB(u_x, temp_x, constant,HELMHOLTZ);
     test  = solve_BiCGSTAB(u_y, temp_y, constant,HELMHOLTZ);
-/*for(i=0;i<N_cells;i++){
-if(isnan(u_x->val[i])){ printf("nan x \n"); exit(1); } 
-if(isnan(u_y->val[i])){ printf("nan x \n"); exit(1); } 
-}*/
-  //  set_bc(u_x);
-   // set_bc(u_y);
-    //compute divergence
     divergence(div,u_x,u_y,constant);
     test  = solve_BiCGSTAB(p, div, constant,POISSON);
     gradient(p,temp_x,temp_y, constant);
@@ -112,7 +96,7 @@ if(isnan(u_y->val[i])){ printf("nan x \n"); exit(1); }
     }
 
     //set_bc(phi);
-      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
+//      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
  // write_vtk(qq, domain, constant); 
 
   }
