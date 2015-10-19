@@ -22,15 +22,21 @@ int main(){
    // double * __restrict__ tmp1 = &tmp->val[l+1];
    // double * __restrict__ tmp2 = &tmp->val[l+2];
     //for(i = l+1 ;i<l+N_x-2;i++){
-double  *tmp1,  *tmp2;
-tmp1 = malloc(N_x*sizeof(double));
-tmp2 = malloc(N_x*sizeof(double));
-    for(i = 0 ;i<N_x-1;i++){
+double * x, * y;
+
+x = malloc(N_x*sizeof(double));
+y = malloc(N_x*sizeof(double));
+//double * __restrict__ tmp1 = __builtin_assume_aligned(x, 16);
+//double * __restrict__ tmp2 = __builtin_assume_aligned(y, 16);
+double * tmp1 = x;
+double * tmp2 = y;
+
+for(i = 1 ;i<100;i++){
   //    tmp->val[i] = nu* ((phi->val[EAST]+phi->val[WEST]-2.0*phi->val[P])*dy/dx + (phi->val[NORTH]+phi->val[SOUTH]-2.0*phi->val[P])*dx/dy) ;
-      tmp1[i] = nu* tmp2[i] * 5.0*tmp2[i];
+      tmp1[i] = 5.0*tmp2[i] +  tmp2[i+129] ;
+//      x[i] = 5.0*y[i] +  y[i+130] ;
     //}
   }
-
   asm volatile("": "+m"(tmp1), "+m"(tmp2));
   return 0;
   //asm volatile("": "+m"(a), "+m"(b), "+m"(c)::"memory");

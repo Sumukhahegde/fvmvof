@@ -74,19 +74,23 @@ int main(int argc, char *argv[])
   }
     //advection
   int qq, test;
-  for(qq = 0;  qq<100 ; qq++){
+  for(qq = 0;  qq<1000 ; qq++){
     for(i=0;i<N_cells;i++){
       temp_x->val[i] = 0.0;
       temp_y->val[i] = 0.0;
     }
     advection(u_x, u_x, u_y, u_z, temp_x, constant );
     advection(u_y, u_x, u_y, u_z, temp_y, constant );
+   
     for( i=0;i<N_cells;i++){
       temp_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
       temp_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
     }
+
     test  = solve_BiCGSTAB(u_x, temp_x, constant,HELMHOLTZ);
     test  = solve_BiCGSTAB(u_y, temp_y, constant,HELMHOLTZ);
+    for(i=0;i<N_cells;i++)
+    if(u_x->val[i] > DELTA && u_x->bc[i]==NONE) printf("hello %lf %d\n", u_x->val[i], i);
     divergence(div,u_x,u_y,constant);
     test  = solve_BiCGSTAB(p, div, constant,POISSON);
     gradient(p,temp_x,temp_y, constant);
@@ -96,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     //set_bc(phi);
-//      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
+      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
  // write_vtk(qq, domain, constant); 
 
   }
