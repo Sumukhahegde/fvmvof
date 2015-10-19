@@ -4,18 +4,18 @@
 #define DELTA 1e-10
 #define PI 2.0*acos(0.0)
 
-#define E i+1
-#define EE i+2
-#define W i-1
-#define WW i-2
-#define N i+N_x
-#define NN i+2*N_x
-#define S i-N_x
-#define SS i-2*N_x
-#define B i-N_x*N_y
-#define BB i-2*N_x*N_y
-#define T i+N_x*N_y
-#define TT i+2*N_x*N_y
+#define EAST i+1
+#define EEAST i+2
+#define WEST i-1
+#define WWEST i-2
+#define NORTH i+N_x
+#define NNORTH i+2*N_x
+#define SOUTH i-N_x
+#define SSOUTH i-2*N_x
+#define BOTTOM i-N_x*N_y
+#define BBOTTOM i-2*N_x*N_y
+#define TOP i+N_x*N_y
+#define TTOP i+2*N_x*N_y
 #define P i
 
 typedef enum{

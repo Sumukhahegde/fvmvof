@@ -28,6 +28,7 @@ void diffusion( Field * phi, double nu,
       if(phi->bc[south] != NONE )
         phi_s = 2.0*(phi->val[south]*abs(2-phi->bc[south]) + phi->val[i]*abs(1-phi->bc[south])) - phi->val[i];
 */
+      phi_e, phi_w;
       tmp->val[i] = nu* ((phi->val[E]+phi->val[W]-2.0*phi->val[P])*dy/dx + (phi->val[N]+phi->val[S]-2.0*phi->val[P])*dx/dy) ;
     }
   }
