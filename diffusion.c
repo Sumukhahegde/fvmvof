@@ -4,43 +4,6 @@
 #include<string.h>  
 #include<stdbool.h>      
 #include "fvmvof.h"
-/*
-void diffusion( Field * phi, double nu,
-    Field * tmp,
-    Constant constant
-    )
-{
-  double dx = constant.dx, dy = constant.dy, dz =constant.dz;
-  int i, l, m;
-  int N = phi->N;
-  int N_x = phi->N_x;
-  double phi_s, phi_n , phi_e, phi_w;
-  for(i = 0;i<N;i++){
-    if(phi->bc[i] == NONE ){
-      l= i%N_x;         
-      m =(int) i/N_x;
-      int south = (m-1)*N_x + l, north =(m+1)*N_x + l, 
-          west =m*N_x + (l-1), east = m*N_x + (l+1);
-      phi_e = phi->val[east];
-      phi_w = phi->val[west];
-      phi_s = phi->val[south];
-      phi_n = phi->val[north];
-
-      if(phi->bc[east] != NONE )
-        phi_e = 2.0*(phi->val[east]*abs(2-phi->bc[east]) + phi->val[i]*abs(1-phi->bc[east])) - phi->val[i];
-      if(phi->bc[west] != NONE )
-        phi_w = 2.0*(phi->val[west]*abs(2-phi->bc[west]) + phi->val[i]*abs(1-phi->bc[west])) - phi->val[i];
-      if(phi->bc[north] != NONE )
-        phi_n = 2.0*(phi->val[north]*abs(2-phi->bc[north]) + phi->val[i]*abs(1-phi->bc[north])) - phi->val[i];
-      if(phi->bc[south] != NONE )
-        phi_s = 2.0*(phi->val[south]*abs(2-phi->bc[south]) + phi->val[i]*abs(1-phi->bc[south])) - phi->val[i];
-
-     tmp->val[i] += nu* ((phi_e+phi_w-2.0*phi->val[i])*dy/dx + (phi_n+phi_s-2.0*phi->val[i])*dx/dy) ;
-    } else 
-      tmp->val[i] = 0.0;
-  }
-return;
-}*/
 
 void diffusion_implicit( Field * phi, Constant constant, 
     double * tmp
@@ -54,12 +17,45 @@ void diffusion_implicit( Field * phi, Constant constant,
   int N_x = phi->N_x;
   int N_y = phi->N_y;
   double phi_s, phi_n , phi_e, phi_w;
+  double * tmp_1, * val;
+  BC_type * bc = phi->bc;
+  val  = phi->val;
+
   for(i = 0 ; i <N; i++)
-      tmp[i] = phi->val[i];
+      tmp[i] = val[i];
 
   for(j=1;j<N_y-1;j++){
     l = j*N_x;
-    for(i = l+1 ;i< l + N_x - 1 ;i++){
+    double * val_e, *val_w, * val_s, * val_n, *val_p;
+    BC_type * bc_e, *bc_w, * bc_s, * bc_n, *bc_p;
+
+    val_p = &val[l];
+    val_e = &val[l+1];
+    val_w = &val[l-1];
+    val_n = &val[l+N_x];
+    val_s = &val[l-N_x];
+    bc_p = &bc[l];
+    bc_e = &bc[l+1];
+    bc_w = &bc[l-1];
+    bc_n = &bc[l+N_x];
+    bc_s = &bc[l-N_x];
+    tmp_1= &tmp[l];
+    for(i = 1 ;i<  N_x - 1 ;i++){
+/*      tmp_1[i] = val_p[i] - dt* nu* ((
+            ( (bc_e[i]==NONE)?val_e[i] : 2.0*val_e[i] - val_p[i] )
+            +( (bc_w[i]==NONE)?val_w[i] : 2.0*val_w[i] - val_p[i] )
+            -2.0*val_p[i])*dy/dx + (
+              ((bc_n[i]==NONE)?val_n[i] : 2.0*val_n[i] - val_p[i])
+              +((bc_s[i]==NONE)?val_s[i] : 2.0*val_s[i] - val_p[i])
+              -2.0*val_p[i])*dx/dy)/(dx*dy) ;*/
+      tmp_1[i] = val_p[i] - dt* nu* ((
+            ( val_e[i] )
+            +( val_w[i] )
+            -2.0*val_p[i])*dy/dx + (
+              (val_n[i] )
+              +(val_s[i])
+              -2.0*val_p[i])*dx/dy)/(dx*dy) ; 
+    /* 
       tmp[i] = phi->val[i] - dt* nu* ((
             ( (phi->bc[EAST]==NONE)?phi->val[EAST] : ((phi->bc[EAST]==DIRICHLET)?2.0*phi->val[EAST] - phi->val[i] : phi->val[i])  )
             +( (phi->bc[WEST]==NONE)?phi->val[WEST] : ((phi->bc[WEST]==DIRICHLET)?2.0*phi->val[WEST] - phi->val[i] : phi->val[i]))
@@ -67,7 +63,9 @@ void diffusion_implicit( Field * phi, Constant constant,
               ((phi->bc[NORTH]==NONE)?phi->val[NORTH] : ((phi->bc[NORTH]==DIRICHLET)? 2.0*phi->val[NORTH] - phi->val[i]: phi->val[i]))
               +((phi->bc[SOUTH]==NONE)?phi->val[SOUTH] : ((phi->bc[SOUTH]==DIRICHLET)? 2.0*phi->val[SOUTH] - phi->val[i]: phi->val[i]))
               -2.0*phi->val[i])*dx/dy)/(dx*dy) ;
+              */
     }
+//  asm volatile("": "+m"(val_p),"+m"(val_e), "+m"(val_w),"+m"(val_n),"+m"(val_s),"+m"(bc_p),"+m"(bc_e),"+m"(bc_w),"+m"(bc_n),"+m"(bc_s), "+m"(tmp_1));
   }
 return;
 }
@@ -78,22 +76,20 @@ void laplacian( Field * phi, Constant constant,
     )
 {
   double dx = constant.dx, dy = constant.dy, dz =constant.dz;
- // double nu = constant.nu;
   int i,j, l, m;
   int N = phi->N;
   int N_x = phi->N_x;
-  
+
   int N_y = phi->N_y;
   double phi_s, phi_n , phi_e, phi_w;
   for(i = 0 ; i <N; i++)
-      tmp[i] = 0.0;
-  
-  
+    tmp[i] = 0.0;
+
+
   for(j=1;j<N_y-1;j++){
     l = j*N_x;
     for(i = l+1 ;i< l + N_x - 1 ;i++){
 
-//   tmp[i] =  ((phi_e+phi_w-2.0*phi->val[i])*dy/dx + (phi_n+phi_s-2.0*phi->val[i])*dx/dy) ;
       tmp[i] =  ((
             ( (phi->bc[EAST]==NONE)?phi->val[EAST] : ((phi->bc[EAST]==DIRICHLET)?2.0*phi->val[EAST] - phi->val[i] : phi->val[i])  )
             +( (phi->bc[WEST]==NONE)?phi->val[WEST] : ((phi->bc[WEST]==DIRICHLET)?2.0*phi->val[WEST] - phi->val[i] : phi->val[i]))
@@ -103,5 +99,5 @@ void laplacian( Field * phi, Constant constant,
               -2.0*phi->val[i])*dx/dy) ;
     }   
   }
-return;
+  return;
 }
