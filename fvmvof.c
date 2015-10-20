@@ -17,11 +17,11 @@ int main(int argc, char *argv[])
   Constant constant;
   double l_x = 1.0;
   double l_y = 1.0;
-  int N_cells_x = 100+2, N_cells_y = 100+2, N_cells_z = 1;
+  int N_cells_x = 200+2, N_cells_y = 200+2, N_cells_z = 1;
   int N_cells = N_cells_x *  N_cells_y * N_cells_z;
   
   constant.dx = l_x / (N_cells_x-2); constant.dy = l_y / (N_cells_y-2);
-  constant.dz = 1.0; constant.dt = 0.002; constant.nu = 0.01;
+  constant.dz = 1.0; constant.dt = 0.001; constant.nu = 0.0001;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
   }
     //advection
   int qq, test;
-  for(qq = 0;  qq<1000 ; qq++){
+  for(qq = 0;  qq<100 ; qq++){
     for(i=0;i<N_cells;i++){
       temp_x->val[i] = 0.0;
       temp_y->val[i] = 0.0;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     //set_bc(phi);
-      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
+//      if(qq%100 == 0)  write_vtk(qq, domain, constant); 
  // write_vtk(qq, domain, constant); 
 
   }

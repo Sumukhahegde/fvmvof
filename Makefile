@@ -16,7 +16,7 @@ LIBPATH	= 	-L ~/
 LIBS	=	-lm 
 
 CC	:=	gcc
-FLAGS	:=	-pg -g  $(INCPATH) -Wall -O3
+FLAGS	:=	  $(INCPATH) -Wall -O3
 #FLAGS	:=	-g -pg $(INCPATH) -Wall -fopenmp -O3
 #LFLAGS	:=	$(LIBPATH) $(LIBS) -lm -lgsl -lblas
 LFLAGS	:=	$(LIBPATH) $(LIBS) 
