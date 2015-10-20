@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
 
     test  = solve_BiCGSTAB(u_x, temp_x, constant,HELMHOLTZ);
     test  = solve_BiCGSTAB(u_y, temp_y, constant,HELMHOLTZ);
-    for(i=0;i<N_cells;i++)
-    if(u_x->val[i] > DELTA && u_x->bc[i]==NONE) printf("hello %lf %d\n", u_x->val[i], i);
+   // for(i=0;i<N_cells;i++)
+   // if(u_x->val[i] > DELTA && u_x->bc[i]==NONE) printf("hello %lf %d\n", u_x->val[i], i);
     divergence(div,u_x,u_y,constant);
     test  = solve_BiCGSTAB(p, div, constant,POISSON);
     gradient(p,temp_x,temp_y, constant);
