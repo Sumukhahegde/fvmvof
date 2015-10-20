@@ -1,0 +1,10 @@
+# Programming conventions
+
+## Variables and types
+* Variable names are written in lower case letters.
+* Struct and enum type names start with a upper case letter.
+* variables with more than one word should be linked by an underscore.
+* Any preprocessor directive like a definition should be in all upper case, 
+  like EAST for i+1 etc. 
+* Any enum items should also be in upper case, like YMIN
+
