@@ -22,9 +22,9 @@ void diffusion_implicit( Field * phi, Constant constant,
   val  = phi->val;
 
   for(i = 0 ; i <N; i++)
-      tmp[i] = val[i];
+    tmp[i] = val[i];
 
-  for(j=1;j<N_y-1;j++){
+  for(j=2;j<N_y-2;j++){
     l = j*N_x;
     double * val_e, *val_w, * val_s, * val_n, *val_p;
     BC_type * bc_e, *bc_w, * bc_s, * bc_n, *bc_p;
@@ -40,11 +40,11 @@ void diffusion_implicit( Field * phi, Constant constant,
     bc_n = &bc[l+N_x];
     bc_s = &bc[l-N_x];
     tmp_1= &tmp[l];
-    for(i = 1 ;i<  N_x - 1 ;i++){
-/*      tmp_1[i] = val_p[i] - dt* nu* ((
-            ( (bc_e[i]==NONE)?val_e[i] : 2.0*val_e[i] - val_p[i] )
-            +( (bc_w[i]==NONE)?val_w[i] : 2.0*val_w[i] - val_p[i] )
-            -2.0*val_p[i])*dy/dx + (
+    for(i = 2 ;i<  N_x - 2 ;i++){
+      /*      tmp_1[i] = val_p[i] - dt* nu* ((
+              ( (bc_e[i]==NONE)?val_e[i] : 2.0*val_e[i] - val_p[i] )
+              +( (bc_w[i]==NONE)?val_w[i] : 2.0*val_w[i] - val_p[i] )
+              -2.0*val_p[i])*dy/dx + (
               ((bc_n[i]==NONE)?val_n[i] : 2.0*val_n[i] - val_p[i])
               +((bc_s[i]==NONE)?val_s[i] : 2.0*val_s[i] - val_p[i])
               -2.0*val_p[i])*dx/dy)/(dx*dy) ;*/
@@ -55,19 +55,35 @@ void diffusion_implicit( Field * phi, Constant constant,
               (val_n[i] )
               +(val_s[i])
               -2.0*val_p[i])*dx/dy)/(dx*dy) ; 
-    /* 
-      tmp[i] = phi->val[i] - dt* nu* ((
-            ( (phi->bc[EAST]==NONE)?phi->val[EAST] : ((phi->bc[EAST]==DIRICHLET)?2.0*phi->val[EAST] - phi->val[i] : phi->val[i])  )
-            +( (phi->bc[WEST]==NONE)?phi->val[WEST] : ((phi->bc[WEST]==DIRICHLET)?2.0*phi->val[WEST] - phi->val[i] : phi->val[i]))
-            -2.0*phi->val[i])*dy/dx + (
-              ((phi->bc[NORTH]==NONE)?phi->val[NORTH] : ((phi->bc[NORTH]==DIRICHLET)? 2.0*phi->val[NORTH] - phi->val[i]: phi->val[i]))
-              +((phi->bc[SOUTH]==NONE)?phi->val[SOUTH] : ((phi->bc[SOUTH]==DIRICHLET)? 2.0*phi->val[SOUTH] - phi->val[i]: phi->val[i]))
-              -2.0*phi->val[i])*dx/dy)/(dx*dy) ;
-              */
+      /* 
+         tmp[i] = phi->val[i] - dt* nu* ((
+         ( (phi->bc[EAST]==NONE)?phi->val[EAST] : ((phi->bc[EAST]==DIRICHLET)?2.0*phi->val[EAST] - phi->val[i] : phi->val[i])  )
+         +( (phi->bc[WEST]==NONE)?phi->val[WEST] : ((phi->bc[WEST]==DIRICHLET)?2.0*phi->val[WEST] - phi->val[i] : phi->val[i]))
+         -2.0*phi->val[i])*dy/dx + (
+         ((phi->bc[NORTH]==NONE)?phi->val[NORTH] : ((phi->bc[NORTH]==DIRICHLET)? 2.0*phi->val[NORTH] - phi->val[i]: phi->val[i]))
+         +((phi->bc[SOUTH]==NONE)?phi->val[SOUTH] : ((phi->bc[SOUTH]==DIRICHLET)? 2.0*phi->val[SOUTH] - phi->val[i]: phi->val[i]))
+         -2.0*phi->val[i])*dx/dy)/(dx*dy) ;
+         */
     }
-//  asm volatile("": "+m"(val_p),"+m"(val_e), "+m"(val_w),"+m"(val_n),"+m"(val_s),"+m"(bc_p),"+m"(bc_e),"+m"(bc_w),"+m"(bc_n),"+m"(bc_s), "+m"(tmp_1));
+    //  asm volatile("": "+m"(val_p),"+m"(val_e), "+m"(val_w),"+m"(val_n),"+m"(val_s),"+m"(bc_p),"+m"(bc_e),"+m"(bc_w),"+m"(bc_n),"+m"(bc_s), "+m"(tmp_1));
   }
-return;
+
+  for(m=1;m<N_y-1;m++){
+    for(l= 1; l <N_x-1; l++){
+      if(l ==1 || m == 1 || l==N_x-2 || m == N_y -2){
+        i = m*N_x + l;
+
+        tmp[i] = phi->val[i] - dt* nu* ((                                      
+              ( (phi->bc[EAST]==NONE)?phi->val[EAST] : ((phi->bc[EAST]==DIRICHLET)?2.0*phi->val[EAST] - phi->val[i] : phi->val[i])  )
+              +( (phi->bc[WEST]==NONE)?phi->val[WEST] : ((phi->bc[WEST]==DIRICHLET)?2.0*phi->val[WEST] - phi->val[i] : phi->val[i]))
+              -2.0*phi->val[i])*dy/dx + (                                            
+                ((phi->bc[NORTH]==NONE)?phi->val[NORTH] : ((phi->bc[NORTH]==DIRICHLET)? 2.0*phi->val[NORTH] - phi->val[i]: phi->val[i]))
+                +((phi->bc[SOUTH]==NONE)?phi->val[SOUTH] : ((phi->bc[SOUTH]==DIRICHLET)? 2.0*phi->val[SOUTH] - phi->val[i]: phi->val[i]))
+                -2.0*phi->val[i])*dx/dy)/(dx*dy) ;                                     
+      }                                                                                                                                                    
+    }
+  }
+  return;
 }
 
 
