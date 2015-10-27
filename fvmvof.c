@@ -3,6 +3,9 @@
 #include<math.h>
 #include<string.h>
 #include<stdbool.h>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
 #include "fvmvof.h"
 
 //void Compute_AX(double * );
@@ -13,6 +16,9 @@ static Field * allocate_field( int, int, int);
 
 int main(int argc, char *argv[])
 {
+#ifdef _OPENMP
+double start_wall_time = omp_get_wtime();
+#endif
   Domain domain;
   Constant constant;
   double l_x = 1.0;
@@ -21,7 +27,7 @@ int main(int argc, char *argv[])
   int N_cells = N_cells_x *  N_cells_y * N_cells_z;
   
   constant.dx = l_x / (N_cells_x-2); constant.dy = l_y / (N_cells_y-2);
-  constant.dz = 1.0; constant.dt = 0.001; constant.nu = 0.01;
+  constant.dz = 1.0; constant.dt = 0.001; constant.nu = 0.0001;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -81,7 +87,7 @@ int main(int argc, char *argv[])
     }
     advection(u_x, u_x, u_y, u_z, temp_x, constant );
     advection(u_y, u_x, u_y, u_z, temp_y, constant );
-   
+
     for( i=0;i<N_cells;i++){
       temp_x->val[i] = u_x->val[i] + constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
       temp_y->val[i] = u_y->val[i] + constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
@@ -89,8 +95,8 @@ int main(int argc, char *argv[])
 
     test  = solve_BiCGSTAB(u_x, temp_x, constant,HELMHOLTZ);
     test  = solve_BiCGSTAB(u_y, temp_y, constant,HELMHOLTZ);
-   // for(i=0;i<N_cells;i++)
-   // if(u_x->val[i] > DELTA && u_x->bc[i]==NONE) printf("hello %lf %d\n", u_x->val[i], i);
+    // for(i=0;i<N_cells;i++)
+    // if(u_x->val[i] > DELTA && u_x->bc[i]==NONE) printf("hello %lf %d\n", u_x->val[i], i);
     divergence(div,u_x,u_y,constant);
     test  = solve_BiCGSTAB(p, div, constant,POISSON);
     gradient(p,temp_x,temp_y, constant);
@@ -100,12 +106,14 @@ int main(int argc, char *argv[])
     }
 
     //set_bc(phi);
-     // if(qq%100 == 0)  
-      //write_vtk(qq, domain, constant); 
- // write_vtk(qq, domain, constant); 
+    //if(qq%100 == 0)  
+    // write_vtk(qq, domain, constant); 
+    // write_vtk(qq, domain, constant); 
 
   }
-  
+#ifdef _OPENMP
+  printf("Time taken for the simulation: %lf", omp_get_wtime() - start_wall_time);
+#endif
   return 0;
 }
 

@@ -16,7 +16,8 @@ LIBPATH	= 	-L ~/
 LIBS	=	-lm 
 
 CC	:=	gcc
-FLAGS	:=	  -pg $(INCPATH) -Wall -O3 -march=native -ftree-vectorize -ftree-vectorizer-verbose=1
+FLAGS	:=	  $(INCPATH) -Wall -O3 -march=native -ftree-vectorize -ftree-vectorizer-verbose=1 
+#-fopenmp
 #FLAGS	:=	-g -pg $(INCPATH) -Wall -fopenmp -O3
 #LFLAGS	:=	$(LIBPATH) $(LIBS) -lm -lgsl -lblas
 LFLAGS	:=	$(LIBPATH) $(LIBS) 
