@@ -20,6 +20,8 @@ void diffusion_implicit( Field * phi, Constant constant,
   int N_y = phi->N_y;
   double phi_s, phi_n , phi_e, phi_w;
   double * tmp_1;
+  double area = dx*dy;
+  double dtxnu = dt*nu;
 
   for(i = 0 ; i <N; i++)
     tmp[i] = phi->val[i];
@@ -41,13 +43,13 @@ void diffusion_implicit( Field * phi, Constant constant,
     bc_s = &phi->bc[l-N_x];
     tmp_1= &tmp[l];
     for(i = 2 ;i<  N_x - 2 ;i++){
-      tmp_1[i] = val_p[i] - dt* nu* ((
+      tmp_1[i] = val_p[i] - dtxnu* ((
             ( val_e[i] )
             +( val_w[i] )
             -2.0*val_p[i])*dy/dx + (
               (val_n[i] )
               +(val_s[i])
-              -2.0*val_p[i])*dx/dy)/(dx*dy) ; 
+              -2.0*val_p[i])*dx/dy)/(area) ; 
     }
     //  asm volatile("": "+m"(val_p),"+m"(val_e), "+m"(val_w),"+m"(val_n),"+m"(val_s),"+m"(bc_p),"+m"(bc_e),"+m"(bc_w),"+m"(bc_n),"+m"(bc_s), "+m"(tmp_1));
   }
@@ -62,8 +64,8 @@ void diffusion_implicit( Field * phi, Constant constant,
         phi_n = boundary_val(phi, i, NORTH);
         phi_s = boundary_val(phi, i, SOUTH);
 
-        tmp[i] = phi->val[i] - dt*nu*( ( phi_e + phi_w -2.0*phi->val[i])*dy/dx 
-          + ( phi_n + phi_s - 2.0*phi->val[i])*dx/dy)/(dx*dy) ;                                            
+        tmp[i] = phi->val[i] - dtxnu*( ( phi_e + phi_w -2.0*phi->val[i])*dy/dx 
+          + ( phi_n + phi_s - 2.0*phi->val[i])*dx/dy)/(area) ;                                            
     }
   }
   // Boundary along x axis at first and last y points
@@ -77,8 +79,8 @@ void diffusion_implicit( Field * phi, Constant constant,
         phi_n = boundary_val(phi, i, NORTH);
         phi_s = boundary_val(phi, i, SOUTH);
 
-        tmp[i] = phi->val[i] - dt*nu*( ( phi_e + phi_w -2.0*phi->val[i])*dy/dx 
-          + ( phi_n + phi_s - 2.0*phi->val[i])*dx/dy)/(dx*dy) ;
+        tmp[i] = phi->val[i] - dtxnu*( ( phi_e + phi_w -2.0*phi->val[i])*dy/dx 
+          + ( phi_n + phi_s - 2.0*phi->val[i])*dx/dy)/(area) ;
     }
   }
 /*

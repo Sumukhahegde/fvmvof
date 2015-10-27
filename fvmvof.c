@@ -23,11 +23,11 @@ double start_wall_time = omp_get_wtime();
   Constant constant;
   double l_x = 1.0;
   double l_y = 1.0;
-  int N_cells_x = 200+2, N_cells_y = 200+2, N_cells_z = 1;
+  int N_cells_x = 127+2, N_cells_y = 127+2, N_cells_z = 1;
   int N_cells = N_cells_x *  N_cells_y * N_cells_z;
   
   constant.dx = l_x / (N_cells_x-2); constant.dy = l_y / (N_cells_y-2);
-  constant.dz = 1.0; constant.dt = 0.001; constant.nu = 0.0001;
+  constant.dz = 1.0; constant.dt = 0.002; constant.nu = 0.001;
   
   Field * p   = allocate_field( N_cells_x, N_cells_y, N_cells_z);
   Field * u_x = allocate_field( N_cells_x, N_cells_y, N_cells_z);
@@ -79,8 +79,14 @@ double start_wall_time = omp_get_wtime();
     exit(1);
   }
     //advection
-  int qq, test;
-  for(qq = 0;  qq<100 ; qq++){
+  int qq=0, test;
+  double time = 0.0;
+  double end_time = 66.0;
+
+  while (time <= end_time){
+    if(qq%5000 == 0)  
+      write_vtk(qq, domain, constant); 
+
     for(i=0;i<N_cells;i++){
       temp_x->val[i] = 0.0;
       temp_y->val[i] = 0.0;
@@ -104,16 +110,19 @@ double start_wall_time = omp_get_wtime();
       u_x->val[i] = u_x->val[i] - constant.dt*temp_x->val[i]/(constant.dx*constant.dy);
       u_y->val[i] = u_y->val[i] - constant.dt*temp_y->val[i]/(constant.dx*constant.dy);
     }
-
+    qq++;
+    time += constant.dt;
     //set_bc(phi);
-    //if(qq%100 == 0)  
     // write_vtk(qq, domain, constant); 
-    // write_vtk(qq, domain, constant); 
-
+printf("Time step %d, time %2.8f", qq, time);
+printf("\r");
+fflush(stdout);
   }
 #ifdef _OPENMP
   printf("Time taken for the simulation: %lf", omp_get_wtime() - start_wall_time);
 #endif
+
+  write_line_data(domain);
   return 0;
 }
 
@@ -296,6 +305,21 @@ void Compute_AX(double * Temp){
   return;
 }
 */
+static void write_line_data(Domain domain, Constant constant){
+chat filename1[30];
+chat filename2[30];
+sprintf(filename1, "line_data_u.dat");
+sprintf(filename2, "line_data_v.dat");
+FILE *fp1 = fopen(filename1, "w");
+FILE *fp2 = fopen(filename2, "w");
+int N_y = domain.u_x->N_y;
+int N_x = domain.u_y->N_x;
+int i,mid ;
+mid = (N_y-1)/2 + 2;
+for(i = 1, i <N_y-1; i ++){
+
+}
+}
 static void write_vtk(int q, Domain domain, Constant constant)
 {
   char filename[30]; 
